@@ -51,7 +51,7 @@ class ProductService
             $query->latest()->get();
         }
 
-        return $query->paginate(1);
+        return $query->paginate(4);
     }
 
     public function getProductById(int $id): ?Product
@@ -99,7 +99,7 @@ class ProductService
                 'description' => 'sometimes|string',
                 'price' => 'sometimes|numeric|min:0',
                 'stock' => 'sometimes|integer|min:0',
-                'image_path' => 'sometimes|url',
+                'image_path' => 'sometimes|string|max:255',
             ];
         } else {
             $rules = [
@@ -108,7 +108,7 @@ class ProductService
                 'description' => 'required|string',
                 'price' => 'required|numeric|min:0',
                 'stock' => 'required|integer|min:0',
-                'image_path' => 'required|url',
+                'image_path' => 'required|string|max:255',
             ];
         }
 

@@ -25,7 +25,7 @@ class Product extends Model
         return Attribute::make(
             get: fn (?string $value) =>
                 $value
-                    ? asset('storage/' . $value)
+                    ? asset($value)
                     : null,
         );
     }

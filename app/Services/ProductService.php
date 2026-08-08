@@ -51,7 +51,7 @@ class ProductService
             $query->latest()->get();
         }
 
-        return $query->paginate(4);
+        return $query->paginate(12);
     }
 
     public function getProductById(int $id): ?Product

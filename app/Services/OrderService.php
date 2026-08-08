@@ -107,7 +107,7 @@ class OrderService
             'user', 'items.product'
             ])
             ->latest()
-            ->get();
+            ->paginate(12);
     }
 
     public function getOrderById(Int $id): ?Order

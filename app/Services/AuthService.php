@@ -40,7 +40,7 @@ class AuthService
     ];
   }
     
-// Fungsi Login
+    // Fungsi Login
     public function login(string $email, string $password): ?array
     {
         $user = User::where('email', $email)->first();
@@ -57,5 +57,29 @@ class AuthService
             'user' => $user,
             'token' => $token,
         ];
+    }
+
+    // Fungsi edit user data
+    public function updateProfile(int $userId, array $data)
+    {
+        $rules = [
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email,' . $userId, 
+        ];
+
+        $validator = Validator::make($data, $rules);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        $user = User::findOrFail($userId);
+
+        $user->update([
+            'name' => $data['name'],
+            'email' => $data['email'],
+        ]);
+
+        return $user->fresh();
     }
 }

@@ -9,12 +9,10 @@ use Illuminate\Http\Request;
 
 class AuthController extends Controller
 {
-    protected AuthService $authService;
 
-    public function __construct(AuthService $authService)
-    {
-        $this->authService = $authService;
-    }
+    public function __construct(
+        protected AuthService $authService
+    ){}
 
     // Register
     public function register(Request $request): JsonResponse
@@ -60,5 +58,21 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Logout berhasil'
         ], 200);
+    }
+
+
+    // Update User
+    public function updateUser(Request $request): JsonResponse 
+    {
+        $result = $this->authService->updateProfile(
+            $request->user()->id,
+            $request->all()
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profile updated successfully',
+            'data' => $result   
+        ]);
     }
 }

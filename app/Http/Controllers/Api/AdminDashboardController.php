@@ -8,12 +8,9 @@ use Illuminate\Http\Request;
 
 class AdminDashboardController extends Controller
 {
-    protected DashboardService $dashboardService;
-
-    public function __construct(DashboardService $dashboardService)
-    {
-        $this->dashboardService = $dashboardService;
-    }
+    public function __construct(
+        protected DashboardService $dashboardService
+    ){}
 
     public function index() {
         

@@ -8,12 +8,9 @@ use Illuminate\Http\Request;
 
 class AdminProductController extends Controller
 {
-    protected ProductService $productService;
-
-    public function __construct(ProductService $productService)
-    {
-        $this->productService = $productService;
-    }
+    public function __construct(
+        protected ProductService $productService
+    ){}
 
     public function store(Request $request)
     {

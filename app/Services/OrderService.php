@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 class OrderService
@@ -15,28 +14,6 @@ class OrderService
         array $shippingData,
         array $cartItems)
     {
-        $validationData = [
-            "customer_name" => $shippingData['customer_name'] ?? null,
-            "phone" => $shippingData['phone'] ?? null,
-            "address" => $shippingData['address'] ?? null,
-            "items" => $cartItems,
-        ];
-
-        $rules = [
-            "customer_name" => "required|string|max:255",
-            "phone" => "required|string|max:20",
-            "address" => "required|string|max:500",
-            "items" => "required|array|min:1",
-            "items.*.product_id" => "required|integer|exists:products,id",
-            "items.*.quantity" => "required|integer|min:1",
-        ];
-
-        $validator = Validator::make($validationData, $rules);
-
-        if ($validator->fails()) 
-        {
-            throw new ValidationException($validator);
-        }
 
         return DB::transaction(function () use ($userId, $shippingData, $cartItems) {
             return $this->processOrder($userId, $shippingData, $cartItems);
@@ -120,21 +97,6 @@ class OrderService
 
     public function updateOrderStatus(Int $id, Array $data): ?Order
     {
-        $validationData = [
-            "status" => $data['status'] ?? null,
-        ];
-
-        $rules = [
-            "status" => "required|string|in:pending,processing,completed,cancelled",
-        ];
-
-        $validator = Validator::make($validationData, $rules);
-
-        if ($validator->fails())
-        {
-            throw new ValidationException($validator);
-        }
-
         $order = Order::findOrFail($id);
 
         $order->update([

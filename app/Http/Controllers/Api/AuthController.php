@@ -17,7 +17,13 @@ class AuthController extends Controller
     // Register
     public function register(Request $request): JsonResponse
     {
-        $result = $this->authService->register($request->all());
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $result = $this->authService->register($validatedData);
 
         return response()->json([
             'message' => 'Pendaftaran berhasil',
@@ -30,9 +36,14 @@ class AuthController extends Controller
 
     public function login(Request $request): JsonResponse
     {
+        $validatedData = $request->validate([
+            'email'    => 'required|string|email',
+            'password' => 'required|string',     
+        ]);
+
         $result = $this->authService->login(
-            $request->email,
-            $request->password
+            $validatedData['email'],
+            $validatedData['password']  
         );
 
         if (!$result)
@@ -64,15 +75,22 @@ class AuthController extends Controller
     // Update User
     public function updateUser(Request $request): JsonResponse 
     {
+        $userId = $request->user()->id;
+
+        $validatedData = $request->validate([
+           'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email,' . $userId,  
+        ]);
+
         $result = $this->authService->updateProfile(
-            $request->user()->id,
-            $request->all()
+            $userId,
+            $validatedData
         );
 
         return response()->json([
             'success' => true,
             'message' => 'Profile updated successfully',
             'data' => $result   
-        ]);
+        ], 200);
     }
 }

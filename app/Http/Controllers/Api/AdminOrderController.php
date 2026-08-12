@@ -21,7 +21,7 @@ class AdminOrderController extends Controller
             'success' => true,
             'message' => 'Orders retrieved successfully',
             'data' => $orders
-        ]);
+        ], 200);
     }
 
     public function show(Int $id): JsonResponse
@@ -32,18 +32,22 @@ class AdminOrderController extends Controller
             'success' => true,
             'message' => 'Order retrieved successfully',
             'data' => $order
-        ]);
+        ], 200);
     }
 
     public function updateStatus(Request $request, Int $id): JsonResponse
     {
+        $validatedData = $request->validate([
+            "status" => "required|string|in:pending,processing,completed,cancelled",
+        ]);
+
         $order = $this->orderService
-            ->updateOrderStatus($id, $request->only('status'));
+            ->updateOrderStatus($id, $validatedData);
         
         return response()->json([
             'success' => true,
             'message' => 'Order status updated successfully',
             'data' => $order
-        ]);
+        ], 200);
     }
 }

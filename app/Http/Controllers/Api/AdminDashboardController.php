@@ -27,6 +27,6 @@ class AdminDashboardController extends Controller
                 'statistic_data' => $statisticData,
                 'latest_orders_data' => $latestOrder,
             ]
-        ]);
+        ], 200);
     }
 }

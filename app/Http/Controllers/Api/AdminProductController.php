@@ -14,8 +14,17 @@ class AdminProductController extends Controller
 
     public function store(Request $request)
     {
+        $validatedData = $request->validate([
+            'category_id' => 'required|exists:categories,id',
+            'name' => 'required|string|max:255',
+            'description' => 'required|string',
+            'price' => 'required|numeric|min:0',
+            'stock' => 'required|integer|min:0',
+            'image_path' => 'required|string|max:255',
+        ]);
+
         $product = $this->productService->createProduct(
-            $request->all()
+            $validatedData
         );
 
         return response()->json([
@@ -26,15 +35,24 @@ class AdminProductController extends Controller
 
     public function update(Request $request, int $id)
     {
+        $validatedData = $request->validate([
+            'category_id' => 'sometimes|exists:categories,id',
+            'name' => 'sometimes|string|max:255',
+            'description' => 'sometimes|string',
+            'price' => 'sometimes|numeric|min:0',
+            'stock' => 'sometimes|integer|min:0',
+            'image_path' => 'sometimes|string|max:255',
+        ]);
+
         $product = $this->productService->updateProduct(
             $id,
-            $request->all()
+            $validatedData
         );
 
         return response()->json([
             'message' => 'product updated successfully',
             'data' => $product
-        ]);
+        ], 200);
     }
 
     public function destroy(int $id)
@@ -43,6 +61,6 @@ class AdminProductController extends Controller
 
         return response()->json([
             'message' => 'product deleted successfully'
-        ]);
+        ], 200);
     }
 }

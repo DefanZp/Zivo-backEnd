@@ -59,22 +59,18 @@ class ProductService
         return Product::with('category')->find($id);
     }
 
-    // Untuk admin
 
+    // Untuk admin
     public function createProduct(array $data): Product
     {
-        $validatedData = $this->validateProductData($data);
-
-        return Product::create($validatedData);
+        return Product::create($data);
     }
 
     public function updateProduct(int $id, array $data): Product
     {
         $product = $this->findProductById($id);
 
-        $validatedData = $this->validateProductData($data, true);
-
-        $product->update($validatedData);
+        $product->update($data);
 
         // mengambil ulang data dari database
         return $product->fresh();
@@ -87,39 +83,6 @@ class ProductService
         $product->delete();
     }
 
-    // private function
-
-    private function validateProductData(array $data, bool $isUpdate = false): array
-    {
-        // Cek jika update, field tidak wajib, jika create field wajib
-        if ($isUpdate) {
-            $rules = [
-                'category_id' => 'sometimes|exists:categories,id',
-                'name' => 'sometimes|string|max:255',
-                'description' => 'sometimes|string',
-                'price' => 'sometimes|numeric|min:0',
-                'stock' => 'sometimes|integer|min:0',
-                'image_path' => 'sometimes|string|max:255',
-            ];
-        } else {
-            $rules = [
-                'category_id' => 'required|exists:categories,id',
-                'name' => 'required|string|max:255',
-                'description' => 'required|string',
-                'price' => 'required|numeric|min:0',
-                'stock' => 'required|integer|min:0',
-                'image_path' => 'required|string|max:255',
-            ];
-        }
-
-        $validator = Validator::make($data, $rules);
-
-        if ($validator->fails()) {
-            throw new ValidationException($validator);
-        }
-
-        return $validator->validated();
-    }
 
     // Cari product berdasarkan id
     private function findProductById(Int $id): Product

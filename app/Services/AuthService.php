@@ -5,8 +5,6 @@ namespace App\Services;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\ValidationException;
 
 class AuthService
 {
@@ -14,17 +12,7 @@ class AuthService
 // Fungsi Register
   public function register(array $data): array
   {
-    // Validate
-    $validator = Validator::make($data, [
-        'name' => 'required|string|max:255',
-        'email' => 'required|string|email|max:255|unique:users',
-        'password' => 'required|string|min:8|confirmed',
-    ]);
-
-    if ($validator->fails()) {
-        throw new ValidationException($validator);
-    }
-
+    
     $user = User::create([
         'name' => $data['name'],
         'email' => $data['email'],
@@ -62,17 +50,6 @@ class AuthService
     // Fungsi edit user data
     public function updateProfile(int $userId, array $data)
     {
-        $rules = [
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:users,email,' . $userId, 
-        ];
-
-        $validator = Validator::make($data, $rules);
-
-        if ($validator->fails()) {
-            throw new ValidationException($validator);
-        }
-
         $user = User::findOrFail($userId);
 
         $user->update([

@@ -18,24 +18,15 @@ class OrderController extends Controller
         $userId = $request->user()->id;
 
         $validatedData = $request->validate([
-            "customer_name" => "required|string|max:255",
-            "phone" => "required|string|max:20",
-            "address" => "required|string|max:500",
+            "address_id" => 'required|integer|exists:addresses,id',
             "items" => "required|array|min:1",
             "items.*.product_id" => "required|integer|exists:products,id",
             "items.*.quantity" => "required|integer|min:1",
         ]);
 
-        // mengelompokkan shipping data
-        $shippingData = [
-            'customer_name' => $validatedData['customer_name'],
-            'phone' => $validatedData['phone'],
-            'address' => $validatedData['address'],
-        ];
-
         $order = $this->orderService->createOrder(
             $userId,
-            $shippingData,
+            $validatedData['address_id'],
             $validatedData['items']
         );
 

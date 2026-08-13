@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Address;
 use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
@@ -11,17 +12,28 @@ class OrderService
 {
     public function createOrder(
         int $userId,
-        array $shippingData,
+        int $addressId,
         array $cartItems)
     {
 
-        return DB::transaction(function () use ($userId, $shippingData, $cartItems) {
-            return $this->processOrder($userId, $shippingData, $cartItems);
+        return DB::transaction(function () use ($userId, $addressId, $cartItems) {
+            return $this->processOrder($userId, $addressId, $cartItems);
         });
     }
 
-    private function processOrder(Int $userId, array $shippingData, array $cartItems)
+    private function processOrder(Int $userId, int $addressId, array $cartItems)
     {
+        // cari alamat yang di pilih user 
+        $address = Address::where('id', $addressId)
+            ->where('user_id', $userId)
+            ->firstOrFail();
+        
+        if (!$address) {
+            throw ValidationException::withMessages([
+                'address_id' => ['Selected address is invalid.']
+            ]); 
+        }
+
         // fetch product
         $productIds = array_column($cartItems, 'product_id');
         $products = Product::lockForUpdate()
@@ -50,9 +62,31 @@ class OrderService
         // buat order
         $order = Order::create([
             "user_id" => $userId,
-            "customer_name" => $shippingData['customer_name'],
-            "phone" => $shippingData['phone'],
-            "address" => $shippingData['address'],
+
+            // Snapshot penerima
+            "recipient_name" => $address->recipient_name,
+            "phone" => $address->phone,
+            "full_address" => $address->full_address,
+
+            // Snapshot wilayah
+            "province_id" => $address->province_id,
+            "province_name" => $address->province_name,
+
+            "city_id" => $address->city_id,
+            "city_name" => $address->city_name,
+
+            "district_id" => $address->district_id,
+            "district_name" => $address->district_name,
+
+            "subdistrict_id" => $address->subdistrict_id,
+            "subdistrict_name" => $address->subdistrict_name,
+
+            'postal_code' => $address->postal_code,
+
+            // Snapshot lokasi
+            'latitude' => $address->latitude,
+            'longitude' => $address->longitude,
+
             "total_price" => $total_price,
         ]);
 
@@ -62,7 +96,6 @@ class OrderService
             $product = $products->get($item['product_id']);
             
             $order->items()->create([
-                "order_id" => $order->id,
                 "product_id" => $product->id,
                 "quantity" => $item['quantity'],
                 "price" => $product->price,

@@ -48,7 +48,7 @@ class DashboardService
         $latestOrders = Order::select([
             'id', 
             'user_id', 
-            'customer_name', 
+            'recipient_name', 
             'total_price', 
             'status', 
             'created_at'

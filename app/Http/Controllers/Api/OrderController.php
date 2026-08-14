@@ -13,6 +13,31 @@ class OrderController extends Controller
     )
     {}
 
+    public function index(Request $request) {
+        $userId = $request->user()->id;
+
+        $orders = $this->orderService->getUserOrders($userId);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Orders retrieved successfully',
+            'data' => $orders
+        ]);
+    }
+
+    public function show(Request $request, int $id) {
+        $userId = $request->user()->id;
+
+        $order = $this->orderService
+            ->getUserOrderById($userId, $id);
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Order retrieved successfully',
+            'data' => $order
+        ]);
+    }
+
     public function store(Request $request)
     {
         $userId = $request->user()->id;

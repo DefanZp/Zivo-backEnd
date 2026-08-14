@@ -108,6 +108,26 @@ class OrderService
         return $order->load('items.product');
     }
 
+    // Cari order berdasarkan id user
+    public function getUserOrders(int $userId) {
+        return Order::with([
+            'items.product'
+        ])
+        ->where('user_id', $userId)
+        ->latest()
+        ->paginate(12);
+    }
+
+    // Cari Order berdasarkan id order
+    public function getUserOrderById(int $userId, int $orderId): ?Order {
+        return Order::with([
+            'items.product'
+        ])
+        ->where('user_id', $userId)
+        ->where('id', $orderId)
+        ->first();
+    }
+
 
     // Admin Service
 

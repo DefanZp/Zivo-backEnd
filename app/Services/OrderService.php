@@ -10,6 +10,11 @@ use Illuminate\Validation\ValidationException;
 
 class OrderService
 {
+    // inject PaymentService
+    public function __construct(
+        protected PaymentService $paymentService
+    ){}
+
     public function createOrder(
         int $userId,
         int $addressId,
@@ -27,12 +32,6 @@ class OrderService
         $address = Address::where('id', $addressId)
             ->where('user_id', $userId)
             ->firstOrFail();
-        
-        if (!$address) {
-            throw ValidationException::withMessages([
-                'address_id' => ['Selected address is invalid.']
-            ]); 
-        }
 
         // fetch product
         $productIds = array_column($cartItems, 'product_id');
@@ -104,8 +103,17 @@ class OrderService
             // kurangi stock
             $product->decrement('stock', $item['quantity']);
         }
+
+        // Buat payment
+        $this->paymentService->createPayment( 
+            $order->id, 
+            $total_price 
+        );
         
-        return $order->load('items.product');
+        return $order->load([
+            'items.product',
+            'payment'
+        ]);
     }
 
     // Cari order berdasarkan id user
@@ -121,7 +129,8 @@ class OrderService
     // Cari Order berdasarkan id order
     public function getUserOrderById(int $userId, int $orderId): ?Order {
         return Order::with([
-            'items.product'
+            'items.product',
+            'payment'
         ])
         ->where('user_id', $userId)
         ->where('id', $orderId)
@@ -134,29 +143,161 @@ class OrderService
     public function getAllOrders()
     {
         return Order::with([
-            'user', 'items.product'
+            'user', 
+            'items.product',
+            'payment'
             ])
             ->latest()
             ->paginate(12);
     }
 
-    public function getOrderById(Int $id): ?Order
+    public function getOrderById(int $id): ?Order
     {
         return Order::with([
-            'user', 'items.product'
+            'user', 
+            'items.product',
+            'payment'
             ])
             ->find($id);
     }
 
-    public function updateOrderStatus(Int $id, Array $data): ?Order
-    {
-        $order = Order::findOrFail($id);
+    
+    // fungsi cancel order
+    public function cancelOrder(int $id): ?Order {
+        return DB::transaction( function () use ($id) {
 
-        $order->update([
-            "status" => $data['status']
-        ]);
+            $order = Order::with('items.product', 'payment')
+                ->where('id', $id)
+                ->lockForUpdate()
+                ->firstOrFail();
+            
+            // jika order sudah dibatalkan, tidak perlu lakukan apa-apa
+            if ($order->status === 'cancelled') {
+                return $order; 
+            }
 
-        return $order->fresh();
+            // Order yang sudah selesai tidak boleh dibatalkan
+            if ($order->status === 'completed') {
+                throw ValidationException::withMessages([
+                    'status' => ['Completed orders cannot be cancelled.']
+                ]);
+            }
+
+            $order->update([
+                'status' => 'cancelled',
+            ]);
+
+            // jika ada data payment dan statusnya unpaid maka ubah statusnya menjadi expired
+            if ($order->payment && $order->payment->payment_status === 'unpaid') {
+                $order->payment->update([
+                    'payment_status' => 'expired'
+                ]);
+            }
+
+            // Kembalikan stock
+            $this->restoreStockForOrder($order);
+
+            return $order->fresh(['items.product', 'payment']);
+        });
     }
+
+    private function restoreStockForOrder(Order $order) {
+        foreach ($order->items as $item) {
+            if ($item->product) {
+                $item->product->increment('stock', $item->quantity);
+            }
+        }
+    }
+
+    // fungsi untuk menangani transisi update order status
+    public function validateStatusTransition (Order $order, string $newStatus) {
+
+        // Order yang sudah selesai tidak boleh diubah
+        if ($order->status === 'completed') {
+            throw ValidationException::withMessages([
+                'status' => ['Completed orders cannot be changed.']
+            ]);
+        }
+
+        // Order yang sudah dibatalkan tidak boleh diproses lagi 
+        if ($order->status === 'cancelled') {
+            throw ValidationException::withMessages([
+                'status' => ['Cancelled orders cannot be changed.']
+            ]);
+        }
+
+        // Pending hanya boleh berubah menjadi processing atau cancelled
+        if ($order->status === 'pending') {
+
+            if (
+                $newStatus !== 'processing' &&
+                $newStatus !== 'cancelled'
+                )
+            {
+                throw ValidationException::withMessages([
+                    'status' => ['Pending orders can only become processing or cancelled.']
+                ]);
+            }
+        }
+
+        // Processing hanya boleh berubah menjadi completed atau cancelled
+        if ($order->status === 'processing') {
+
+            if (
+                $newStatus !== 'completed' && 
+                $newStatus !== 'cancelled'
+            )
+            {
+                throw ValidationException::withMessages([
+                    'status' => ['Processing orders can only become completed or cancelled.']
+                ]);
+            }
+        }
+
+        // Processing hanya boleh dilakukan  jika payment sudah dibayar
+        if (
+            $newStatus === 'processing' && 
+            (!$order->payment || $order->payment->payment_status !== 'paid')
+        ) {
+            throw ValidationException::withMessages([
+                'status' => ['Order cannot be processed before payment is paid.']
+            ]); 
+        }
+    }
+
+    public function updateOrderStatus(int $id, array $data): ?Order
+    {
+
+        $newStatus = $data['status'];
+
+        // jika admin membatalkan order
+        if ($newStatus === 'cancelled') {
+            return $this->cancelOrder($id);
+        }
+
+        return DB::transaction( function () use ($id, $newStatus) {
+
+            // Lock order agar tidak ada dua request yang mengubah status secara bersamaan.
+            $order = Order::with('payment')
+            ->where('id', $id)
+            ->lockForUpdate()
+            ->firstOrFail();
+        
+            // Jika status sama, tidak perlu lakukan apapun
+            if($order->status === $newStatus) {
+                return $order;
+            }
+
+            // Pastikan perubahan status diperbolehkan
+            $this->validateStatusTransition($order, $newStatus);
+
+            // Simpan status baru
+            $order->update([
+                "status" => $newStatus
+            ]);
+
+            return $order->fresh();
+        });
+    }    
     
 }

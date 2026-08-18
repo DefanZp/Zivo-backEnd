@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\AdminProductController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\RegionController;
 use Illuminate\Support\Facades\Route;
@@ -64,4 +65,6 @@ Route::middleware(['auth:sanctum', 'admin'])
         Route::get('/orders', [AdminOrderController::class, 'index']);
         Route::get('/orders/{id}', [AdminOrderController::class, 'show']);
         Route::patch('/orders/{id}', [AdminOrderController::class, 'updateStatus']);
+
+        Route::patch('/payments/{id}', [PaymentController::class, 'updateStatus']);
     });

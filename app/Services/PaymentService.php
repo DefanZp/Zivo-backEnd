@@ -104,13 +104,103 @@ class PaymentService
         }
     }
 
+    // private function untuk setiap transaction status dari midtrans
+
+    // untuk payment yang berhasil
+    private function markPaymentAsPaid(Payment $payment) {
+
+        // jika status sudah paid tidak perlu melakukan apa-apa
+        if($payment->payment_status === 'paid') {
+            return;
+        }
+
+        // validasi order apakah boleh diproses
+        $this->validateOrderBeforePayment($payment);
+
+        // update status payment
+        $payment->update([
+            'payment_status' => 'paid',
+            'paid_at' => now(),
+        ]);
+
+        // update status order
+        $payment->order->update([
+            'order_status' => 'processing',
+        ]);
+    }
+
+    // untuk payment yang expired
+    private function handleExpiredPayment(Payment $payment) {
+
+        // jika status sudah expired tidak perlu melakukan apa-apa
+        if($payment->payment_status === 'expired') {
+            return;
+        }
+
+        // ubah status payment menjadi expired
+        $payment->update([
+            'payment_status' => 'expired',
+        ]);
+
+        // panggil cancel order agar stock dikembalikan
+        app(OrderService::class)->cancelOrder($payment->order_id);
+    } 
+
+    // untuk payment failed
+    private function handleFailedPayment(Payment $payment) {
+        
+        // jika status sudah failed atau cancelled tidak perlu melakukan apa-apa
+        if($payment->payment_status === 'failed' || $payment->payment_status === 'cancelled') {
+            return;
+        }
+
+        // ubah status payment menjadi failed
+        $payment->update([
+            'payment_status' => 'failed',
+        ]);
+    }
+
+
+
+    // fungsi untuk process midtrans status
+    public function processMidtransStatus(Payment $payment, string $transactionStatus) {
+
+        // payment berhasil
+        if ($transactionStatus === 'settlement') {
+            $this->markPaymentAsPaid($payment);
+            return;
+        }
+
+        // untuk transaksi kartu, capture juga berhasil
+        if ($transactionStatus === 'capture') {
+            $this->markPaymentAsPaid($payment);
+            return;
+        }
+
+        // untuk yang masih menunggu pembayaran
+        if ($transactionStatus === 'pending') {
+            return;
+        }
+
+        // payment expired
+        if ($transactionStatus === 'expire') {
+            $this->handleExpiredPayment($payment);
+            return;
+        }
+
+        // jika dibatalkan atau ditolak
+        if ($transactionStatus === 'cancel' || $transactionStatus === 'deny') {
+            $this->handleFailedPayment($payment);
+        }
+    }
+
     // fungsi untuk handle midtrans notification
     public function handleMidtransNotification(array $notification) {
         return DB::transaction( function () use ($notification) {
 
             // validasi notification dari midtrans
             $this->validateMidtransNotification($notification);
-            
+
             // cari payment berdasarkan gateway order id
             $payment = Payment::with('order')
                 ->where('gateway_order_id', $notification['order_id'])
@@ -123,6 +213,11 @@ class PaymentService
                 'payment_method' => $notification['payment_type'],
             ]);
 
+            // process status dari midtrans
+            $this->processMidtransStatus( 
+                $payment,
+                $notification['transaction_status']
+            );
 
         });
     }

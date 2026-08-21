@@ -125,7 +125,7 @@ class PaymentService
 
         // update status order
         $payment->order->update([
-            'order_status' => 'processing',
+            'status' => 'processing',
         ]);
     }
 

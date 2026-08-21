@@ -29,4 +29,34 @@ class PaymentController extends Controller
             'data' => $payment
         ], 200);
     }
+
+
+    public function createSnapTransaction(Request $request, int $paymentId) {
+
+        // ambil user id
+        $userId = $request->user()->id;
+        
+        $token = $this->paymentService
+            ->createSnapTransaction($userId, $paymentId);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Snap token created successfully',
+            'data' => [
+                'snap_token' => $token,
+            ],
+        ]);
+    }
+
+    public function handleMidtransNotification(Request $request) {
+
+        $notification = $request->all();
+
+        $this->paymentService->handleMidtransNotification($notification);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Midtrans notification handled successfully',
+        ]);
+    }
 }

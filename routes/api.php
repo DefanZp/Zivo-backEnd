@@ -27,6 +27,9 @@ Route::get('/regions/cities/{provinceId}', [RegionController::class, 'cities']);
 Route::get('/regions/districts/{cityId}', [RegionController::class, 'districts']);
 Route::get('/regions/subdistricts/{districtId}', [RegionController::class, 'subdistricts']);
 
+// Midtrans api webhook
+Route::post('/payments/midtrans/notification', [PaymentController::class, 'handleMidtransNotification']);
+
 // Customer Api
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -49,6 +52,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orders/{id}', [OrderController::class, 'show']);
 
     Route::post('/orders', [OrderController::class, 'store']);
+
+    // Midtrans api 
+    Route::post('/payments/{paymentId}/snap-token', [PaymentController::class, 'createSnapTransaction']);
 });
 
 // Admin Api

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\PaymentService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class PaymentController extends Controller
 {
@@ -49,6 +50,11 @@ class PaymentController extends Controller
     }
 
     public function handleMidtransNotification(Request $request) {
+
+        // Catat notification yang diterima dari Midtrans.
+        Log::info('Midtrans notification received', [
+            'notification' => $request->all(),
+        ]);
 
         $notification = $request->all();
 

@@ -51,11 +51,6 @@ class PaymentController extends Controller
 
     public function handleMidtransNotification(Request $request) {
 
-        // Catat notification yang diterima dari Midtrans.
-        Log::info('Midtrans notification received', [
-            'notification' => $request->all(),
-        ]);
-
         $notification = $request->all();
 
         $this->paymentService->handleMidtransNotification($notification);

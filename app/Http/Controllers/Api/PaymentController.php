@@ -13,25 +13,6 @@ class PaymentController extends Controller
         protected PaymentService $paymentService
     ) {}
 
-    public function updateStatus(Request $request, int $id) {
-
-        $validatedData = $request->validate([
-            'payment_status' => 'required|string|in:unpaid,paid,failed,cancelled,expired',
-        ]);
-
-        $payment = $this->paymentService->updatePaymentStatus(
-            $id,
-            $validatedData['payment_status'],
-        );
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Payment status updated successfully',
-            'data' => $payment
-        ], 200);
-    }
-
-
     public function createSnapTransaction(Request $request, int $paymentId) {
 
         // ambil user id

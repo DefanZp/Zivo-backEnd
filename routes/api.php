@@ -72,6 +72,4 @@ Route::middleware(['auth:sanctum', 'admin'])
         Route::get('/orders', [AdminOrderController::class, 'index']);
         Route::get('/orders/{id}', [AdminOrderController::class, 'show']);
         Route::patch('/orders/{id}', [AdminOrderController::class, 'updateStatus']);
-
-        Route::patch('/payments/{id}', [PaymentController::class, 'updateStatus']);
     });

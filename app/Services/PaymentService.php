@@ -57,6 +57,13 @@ class PaymentService
                 'order_id' => $payment->gateway_order_id,
                 'gross_amount' => (int) $payment->amount,
             ],
+
+            'callbacks' => [
+                'finish' => 
+                    config('services.frontend.url')
+                    . '/payment/result?payment_order_id='
+                    . urlencode($payment->gateway_order_id),
+            ]
         ];
 
         // minta snap token ke midtrans
@@ -236,6 +243,26 @@ class PaymentService
             'payment_method' => 'midtrans',
             'payment_status' => 'unpaid',
         ]);
+    }
+
+    public function getUserPaymentByGatewayOrderId(int $userId, string $gatewayOrderId): ?Payment {
+    
+        // cari payment berdasarkan gateway order id
+        $payment = Payment::with('order')
+            ->where('gateway_order_id', $gatewayOrderId)
+            ->first();
+
+        // jika tidak ada payment
+        if (!$payment) {
+            return null;
+        }
+
+        // Pastikan payment tersebut milik user yang sedang login.
+        if ($payment->order->user_id !== $userId) {
+            return null;
+        }
+
+        return $payment;
     }
 
     // Admin 

@@ -60,4 +60,29 @@ class PaymentController extends Controller
             'message' => 'Midtrans notification handled successfully',
         ]);
     }
+
+    public function getPaymentByGatewayOrderId(Request $request, string $gatewayOrderId) {
+
+        // ambil user id
+        $userId = $request->user()->id;
+
+        $payment = $this->paymentService
+            ->getUserPaymentByGatewayOrderId($userId, $gatewayOrderId);
+
+
+        // Jika payment tidak ditemukan atau bukan milik user ini.
+        if (!$payment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment not found.',
+                'data' => null,
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment found successfully',
+            'data' => $payment,
+        ]);
+    }
 }

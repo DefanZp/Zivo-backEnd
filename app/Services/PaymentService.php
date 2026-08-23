@@ -48,6 +48,20 @@ class PaymentService
             ]);
         }
 
+        // hanya payment unpaid yang boleh membuka snap
+        if ($payment->payment_status !== 'unpaid') {
+            throw ValidationException::withMessages([
+                'payment' => ['This payment is not available for payment.'] 
+            ]);
+        }
+
+        // hanya order pending yang boleh dibayar
+        if ($payment->order->status !== 'pending') {
+            throw ValidationException::withMessages([
+                'payment' => ['This order is not available for payment.'] 
+            ]);
+        }
+
         // ambil data order berserta item dan product
         $payment->load('order.items.product');
 

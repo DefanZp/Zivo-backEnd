@@ -105,7 +105,10 @@ class PaymentService
             !isset($notification['order_id']) ||
             !isset($notification['status_code']) ||
             !isset($notification['gross_amount']) ||
-            !isset($notification['signature_key'])
+            !isset($notification['signature_key']) ||
+            !isset($notification['transaction_id']) ||
+            !isset($notification['payment_type']) ||
+            !isset($notification['transaction_status'])
         ) {
             throw ValidationException::withMessages([
                 'notification' => ['Invalid midtrans notification.']
@@ -196,7 +199,7 @@ class PaymentService
 
 
     // fungsi untuk process midtrans status
-    public function processMidtransStatus(Payment $payment, string $transactionStatus) {
+    private function processMidtransStatus(Payment $payment, string $transactionStatus) {
 
         // payment berhasil
         if ($transactionStatus === 'settlement') {

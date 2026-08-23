@@ -67,15 +67,4 @@ class PaymentController extends Controller
         ]);
     }
 
-    public function checkMidtransTransaction(string $gatewayOrderId) {
-
-        $transaction = $this->paymentService
-            ->checkMidtransTransaction($gatewayOrderId);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Midtrans transaction checked successfully',
-            'data' => $transaction,
-        ]);
-    }
 }

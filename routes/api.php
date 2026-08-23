@@ -56,10 +56,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Midtrans api 
     Route::post('/payments/{paymentId}/snap-token', [PaymentController::class, 'createSnapTransaction']);
     Route::get('/payments/{gatewayOrderId}', [PaymentController::class, 'getPaymentByGatewayOrderId']);
-    Route::get(
-    '/payments/midtrans/status/{gatewayOrderId}',
-    [PaymentController::class, 'checkMidtransTransaction']
-);
 });
 
 // Admin Api

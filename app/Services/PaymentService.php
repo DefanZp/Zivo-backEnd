@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Payment;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Midtrans\Config;
@@ -62,6 +61,16 @@ class PaymentService
             throw ValidationException::withMessages([
                 'payment' => ['This order is not available for payment.'] 
             ]);
+        }
+
+        // Cek apakah transaksi midtrans sudah ada
+        $transaction = $this->getMidtransTransactionStatus($payment);
+
+        // Jika transaksi sudah ditemukan , jangan langsung membuat transaksi baru 
+        if ($transaction) {
+            
+            $this->handleExistingMidtransTransaction($payment, $transaction);
+
         }
 
         // ambil data order berserta item dan product
@@ -297,36 +306,69 @@ class PaymentService
             );
 
         } catch (\Exception $error) {
-            // Catat error untuk debugging.
-            Log::error(
-                'Failed to check Midtrans transaction status.',
-                [
-                    'payment_id' => $payment->id,
-                    'gateway_order_id' =>
-                        $payment->gateway_order_id,
-                    'gateway_transaction_id' =>
-                        $payment->gateway_transaction_id,
-                    'message' => $error->getMessage(),
-                ]
-            );
 
             return null;
         }
     }
 
-    public function checkMidtransTransaction(int $paymentId): ?object {
+    private function handleExistingMidtransTransaction(
+        Payment $payment,
+        object $transaction
+    ): void {
 
-        // konfig midtrans
-        $this->configureMidtrans();
+        $transactionStatus = $transaction->transaction_status;
 
-        // ambil payment
-        $payment = Payment::findOrFail($paymentId);
+        // Jika transaksi masih pending jangan buat snap baru
+        if ($transactionStatus === 'pending') {
+            throw ValidationException::withMessages([
+                'payment' => [
+                    'This payment is still pending. Please wait for the current transaction to finish.'
+                ]
+            ]);
+        }
 
-        // cek status transaksi
-        return $this->getMidtransTransactionStatus($payment);
+        // jika transaksi sudah berhasil singkronkan payment menjadi paid
+        if ($transactionStatus === 'settlement' || $transactionStatus === 'capture') {
+            $this->markPaymentAsPaid($payment);
+            throw ValidationException::withMessages([
+                'payment' => [
+                    'This payment has already been completed.'
+                ]
+            ]);
+        }
+
+        // jika transaksi sudah expired, singkronkan payment menjadi expired
+        if ($transactionStatus === 'expire') {
+            $this->handleExpiredPayment($payment);
+            throw ValidationException::withMessages([
+                'payment' => [
+                    'This payment has expired and the order has been cancelled.'
+                ]
+            ]);
+        }
+
+        // Jika transaksi dibatalkan atau ditolak.
+        if (
+            $transactionStatus === 'cancel' ||
+            $transactionStatus === 'deny'
+        ) {
+            $this->handleFailedPayment($payment);
+
+            throw ValidationException::withMessages([
+                'payment' => [
+                    'This payment can no longer be completed.'
+                ]
+            ]);
+        }
+
+        throw ValidationException::withMessages([
+            'payment' => [
+                'This payment transaction is no longer available.'
+            ]
+        ]);
     }
 
-    // Admin 
+    // Payment validation
 
     // fungsi untuk validasi order status sebelum update order status 
     private function validateOrderBeforePayment(

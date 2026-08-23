@@ -281,28 +281,49 @@ class PaymentService
         return $payment;
     }
 
-    private function getMidtransTransactionStatus(string $gatewayOrderId): ?object {
+    private function getMidtransTransactionStatus(Payment $payment): ?object {
         try {
-            // cek status berdasarkan 
-            return Transaction::status($gatewayOrderId);
+            // Gunakan transaction ID jika sudah tersedia.
+            if ($payment->gateway_transaction_id) {
+                return Transaction::status(
+                    $payment->gateway_transaction_id
+                );
+            }
+
+            // Jika transaction ID belum tersedia,
+            // coba gunakan gateway order ID.
+            return Transaction::status(
+                $payment->gateway_order_id
+            );
 
         } catch (\Exception $error) {
-            // Catat error sebenarnya untuk debugging.
-            Log::error('Failed to check Midtrans transaction status.', [
-                'gateway_order_id' => $gatewayOrderId,
-                'message' => $error->getMessage(),
-            ]);
+            // Catat error untuk debugging.
+            Log::error(
+                'Failed to check Midtrans transaction status.',
+                [
+                    'payment_id' => $payment->id,
+                    'gateway_order_id' =>
+                        $payment->gateway_order_id,
+                    'gateway_transaction_id' =>
+                        $payment->gateway_transaction_id,
+                    'message' => $error->getMessage(),
+                ]
+            );
+
             return null;
         }
     }
 
-    public function checkMidtransTransaction(string $gatewayOrderId): ?object {
+    public function checkMidtransTransaction(int $paymentId): ?object {
 
         // konfig midtrans
         $this->configureMidtrans();
 
+        // ambil payment
+        $payment = Payment::findOrFail($paymentId);
+
         // cek status transaksi
-        return $this->getMidtransTransactionStatus($gatewayOrderId);
+        return $this->getMidtransTransactionStatus($payment);
     }
 
     // Admin 

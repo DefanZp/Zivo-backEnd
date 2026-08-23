@@ -6,6 +6,7 @@ use App\Models\Payment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Midtrans\Transaction;
 use Midtrans\Config;
 use Midtrans\Snap;
 
@@ -277,6 +278,25 @@ class PaymentService
         }
 
         return $payment;
+    }
+
+    private function getMidtransTransactionStatus(string $gatewayOrderId): ?object {
+        try {
+            // cek status berdasarkan 
+            return Transaction::status($gatewayOrderId);
+
+        } catch (\Exception $error) {
+            return null;
+        }
+    }
+
+    public function checkMidtransTransaction(string $gatewayOrderId): ?object {
+
+        // konfig midtrans
+        $this->configureMidtrans();
+
+        // cek status transaksi
+        return $this->getMidtransTransactionStatus($gatewayOrderId);
     }
 
     // Admin 

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Payment;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Midtrans\Config;
 use Midtrans\Snap;
@@ -224,7 +225,8 @@ class PaymentService
 
     public function createPayment(int $orderId, string $amount): Payment {
 
-        $gatewayOrderId = 'ZIVO-ORDER-' . $orderId;
+        // Buat ID transaksi yang unik untuk payment gateway.
+        $gatewayOrderId = 'ZIVO-' . Str::uuid();
 
         return Payment::create([
             'order_id' => $orderId,

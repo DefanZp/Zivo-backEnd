@@ -4,11 +4,12 @@ namespace App\Services;
 
 use App\Models\Payment;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Midtrans\Transaction;
 use Midtrans\Config;
 use Midtrans\Snap;
+use Midtrans\Transaction;
 
 class PaymentService
 {
@@ -286,6 +287,11 @@ class PaymentService
             return Transaction::status($gatewayOrderId);
 
         } catch (\Exception $error) {
+            // Catat error sebenarnya untuk debugging.
+            Log::error('Failed to check Midtrans transaction status.', [
+                'gateway_order_id' => $gatewayOrderId,
+                'message' => $error->getMessage(),
+            ]);
             return null;
         }
     }

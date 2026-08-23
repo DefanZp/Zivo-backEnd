@@ -183,6 +183,13 @@ class OrderService
                 ]);
             }
 
+            // Order yang sudah dibayar tidak boleh dibatalkan (belum ada refund)
+            if ($order->payment && $order->payment->payment_status === 'paid') {
+                throw ValidationException::withMessages([
+                    'status' => ['Paid orders cannot be cancelled yet.']
+                ]);
+            }
+
             $order->update([
                 'status' => 'cancelled',
             ]);

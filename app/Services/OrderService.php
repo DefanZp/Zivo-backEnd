@@ -133,7 +133,7 @@ class OrderService
             config('services.n8n.username'),
             config('services.n8n.password')
         )->post(
-            config('service.n8n.order_webhook_url'),
+            config('services.n8n.order_webhook_url'),
             [
                 'event' => 'order.created',
 

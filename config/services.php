@@ -48,6 +48,13 @@ return [
         'is_production' => env('MIDTRANS_IS_PRODUCTION', false),
     ],
 
+    // n8n
+    'n8n' => [
+        'order_webhook_url' => env('N8N_ORDER_WEBHOOK_URL'),
+        'username' => env('N8N_WEBHOOK_USERNAME'),
+        'password' => env('N8N_WEBHOOK_PASSWORD'),
+    ],
+
     // frontend url 
     'frontend' => [
         'url' => env('FRONTEND_URL'),

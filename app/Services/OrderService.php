@@ -6,6 +6,7 @@ use App\Models\Address;
 use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 
 class OrderService
@@ -22,8 +23,18 @@ class OrderService
     {
 
         return DB::transaction(function () use ($userId, $addressId, $cartItems) {
-            return $this->processOrder($userId, $addressId, $cartItems);
+
+            // proses order
+            $order =  $this->processOrder($userId, $addressId, $cartItems);
+
+            // triger webhook n8n
+            DB::afterCommit(function () use ($order) {
+                $this->sendOrderCreatedWebhook($order);
+            });
+
+            return $order;
         });
+
     }
 
     private function processOrder(Int $userId, int $addressId, array $cartItems)
@@ -114,6 +125,34 @@ class OrderService
             'items.product',
             'payment'
         ]);
+    }
+
+    // fungsi untuk send webhook ke n8n
+    public function sendOrderCreatedWebhook(Order $order): void {
+        Http::withBasicAuth(
+            config('services.n8n.username'),
+            config('services.n8n.password')
+        )->post(
+            config('service.n8n.order_webhook_url'),
+            [
+                'event' => 'order.created',
+
+                'order' => [
+                    'id' => $order->id,
+                    'status' => $order->status,
+                    'payment_status' => $order->payment->payment_status,
+                    'total_price' => $order->total_price,
+
+                    'items' => $order->items->map(function ($item) {
+                        return [
+                            'product_name' => $item->product?->name,
+                            'quantity' => $item->quantity,
+                            'price' => $item->price,
+                        ];
+                    })->values()->all(),
+                ]
+            ]
+        );
     }
 
     // Cari order berdasarkan id user

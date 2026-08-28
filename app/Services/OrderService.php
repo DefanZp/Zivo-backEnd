@@ -152,7 +152,6 @@ class OrderService
                                 return [
                                     'product_name' => $item->product?->name,
                                     'quantity' => $item->quantity,
-                                    'price' => $item->price,
                                 ];
                             })->values()->all(),
                         ]

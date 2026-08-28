@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\Payment;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Midtrans\Config;
@@ -243,6 +245,9 @@ class PaymentService
                 ->lockForUpdate()
                 ->firstOrFail();
 
+            // cek apakah payment sebelumnya sudah paid
+            $wasAlreadyPaid = $payment->payment_status === 'paid';
+
             // simpan transaction id ke payment
             $payment->update([
                 'gateway_transaction_id' => $notification['transaction_id'],
@@ -254,6 +259,29 @@ class PaymentService
                 $payment,
                 $notification['transaction_status']
             );
+
+            // trigger webhook jika payment berhasil 
+            if (
+                !$wasAlreadyPaid &&
+                (
+                    $notification['transaction_status'] === 'settlement' ||
+                    $notification['transaction_status'] === 'capture'
+                )
+            ) {
+                DB::afterCommit(function () use ($payment) {
+                    // ambil payment setelah diproses tadi agar datanya terbaru
+                    $freshPayment = Payment::with([
+                        'order.items.product',
+                        'order.payment'
+                    ])->find($payment->id);
+
+                    if ($freshPayment) {
+                        $this->sendPaymentSettledWebhook($freshPayment);
+                    }
+                });
+            }
+
+            return $payment;
 
         });
     }
@@ -392,6 +420,55 @@ class PaymentService
                 'status' => [
                     'Cannot process payment for a completed order.'
                 ]
+            ]);
+        }
+    }
+
+    // fungsi untuk memanggil webhook ketika payment berhasil
+    public function sendPaymentSettledWebhook(Payment $payment): void {
+        try {
+            $response = Http::timeout(5)
+                ->connectTimeout(3)
+                ->withBasicAuth(
+                    config('services.n8n.username'),
+                    config('services.n8n.password')
+                )->post(
+                    config('services.n8n.payment_webhook_url'),
+                    [
+                        'event' => 'payment.settled',
+                        'order' => [
+                            'id' => $payment->order_id,
+                            'status' => $payment->order->status,
+                            'payment_status' => $payment->payment_status,
+                            'total_price' => $payment->order->total_price,
+                            'items' => $payment->order->items->map(function ($item) {
+                                return [
+                                    'product_name' => $item->product?->name,
+                                    'quantity' => $item->quantity,
+                                ];
+                            })->values()->all(),
+                        ]
+                    ]
+                );
+
+            if ($response->successful()) {
+                Log::info('Payment settled webhook sent.', [
+                    'payment_id' => $payment->id,
+                ]);
+
+                return;
+            }
+
+            // jika gagal kirim log
+            Log::warning('Failed to send payment settled webhook.', [
+                'payment_id' => $payment->id,
+                'status' => $response->status(),
+            ]);
+
+        } catch (\Throwable $e) {
+            Log::error('Failed to send payment settled webhook.', [
+                'payment_id' => $payment->id,
+                'message' => $e->getMessage(),
             ]);
         }
     }

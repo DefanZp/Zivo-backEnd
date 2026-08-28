@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class OrderService
@@ -129,30 +130,55 @@ class OrderService
 
     // fungsi untuk send webhook ke n8n
     public function sendOrderCreatedWebhook(Order $order): void {
-        Http::withBasicAuth(
-            config('services.n8n.username'),
-            config('services.n8n.password')
-        )->post(
-            config('services.n8n.order_webhook_url'),
-            [
-                'event' => 'order.created',
+        try {
+            $response = Http::timeout(5)
+                ->connectTimeout(3)
+                ->withBasicAuth(
+                    config('services.n8n.username'),
+                    config('services.n8n.password')
+                )->post(
+                    config('services.n8n.order_webhook_url'),
+                    [
+                        'event' => 'order.created',
 
-                'order' => [
-                    'id' => $order->id,
-                    'status' => $order->status,
-                    'payment_status' => $order->payment->payment_status,
-                    'total_price' => $order->total_price,
+                        'order' => [
+                            'id' => $order->id,
+                            'status' => $order->status,
+                            'payment_status' => $order->payment->payment_status,
+                            'total_price' => $order->total_price,
 
-                    'items' => $order->items->map(function ($item) {
-                        return [
-                            'product_name' => $item->product?->name,
-                            'quantity' => $item->quantity,
-                            'price' => $item->price,
-                        ];
-                    })->values()->all(),
-                ]
-            ]
-        );
+                            'items' => $order->items->map(function ($item) {
+                                return [
+                                    'product_name' => $item->product?->name,
+                                    'quantity' => $item->quantity,
+                                    'price' => $item->price,
+                                ];
+                            })->values()->all(),
+                        ]
+                    ]
+                );
+
+            // jika berhasil kirim log dan order id
+            if ($response->successful()) {
+                Log::info('Order created webhook sent successfully.', [
+                    'order_id' => $order->id,
+                ]);
+
+                return;
+            }
+
+            // jika gagal kirim log
+            Log::warning('Failed to send order created webhook.', [
+                'order_id' => $order->id,
+                'status' => $response->status(),
+            ]);
+
+        } catch (\Throwable $e) {
+            Log::error('Exception while sending order created webhook.', [
+                'order_id' => $order->id,
+                'message' => $e->getMessage(),
+            ]);
+        }
     }
 
     // Cari order berdasarkan id user

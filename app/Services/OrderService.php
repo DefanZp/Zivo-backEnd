@@ -73,6 +73,7 @@ class OrderService
         // buat order
         $order = Order::create([
             "user_id" => $userId,
+            "status" => "pending",
 
             // Snapshot penerima
             "recipient_name" => $address->recipient_name,

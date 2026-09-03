@@ -22,6 +22,12 @@ jobs:
             docker compose up -d --build
 
             echo "Checking API health..."
-            curl -fsS https://api.zivo.app.cloud/api/categories > /dev/null
+            
+            if curl -fsS https://api.zivoapp.cloud/api/categories > /dev/null; then
+              echo "API health check passed."
+            else
+              echo "API health check failed."
+              exit 1
+            fi
 
             echo "Deployment and health check successful."

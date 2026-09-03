@@ -1,4 +1,4 @@
-name: Test VPS Git Pull
+name: Deploy Zivo Backend 
 
 on:
   push:
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Pull latest code on VPS
+      - name: Deploy to VPS
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -19,3 +19,4 @@ jobs:
           script: |
             cd /var/www/zivo-backend
             git pull origin main 
+            docker compose up -d --build

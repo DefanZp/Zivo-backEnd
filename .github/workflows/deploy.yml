@@ -20,3 +20,8 @@ jobs:
             cd /var/www/zivo-backend
             git pull origin main 
             docker compose up -d --build
+
+            echo "Checking API health..."
+            curl -fsS https://api.zivo.app.cloud/api/categories > /dev/null
+
+            echo "Deployment and health check successful."

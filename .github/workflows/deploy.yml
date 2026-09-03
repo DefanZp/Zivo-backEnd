@@ -1,4 +1,4 @@
-name: Test VPS SSH
+name: Test VPS Git Pull
 
 on:
   push:
@@ -6,17 +6,16 @@ on:
       - main
 
 jobs:
-  test-ssh:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Test SSH connection
+      - name: Pull latest code on VPS
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           script: |
-            echo "SSH connection successful"
-            whoami
-            hostname
+            cd /var/www/zivo-backend
+            git pull origin main 

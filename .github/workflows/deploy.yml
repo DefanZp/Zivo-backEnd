@@ -25,11 +25,15 @@ jobs:
 
             echo "Checking API health..."
             
-            if curl -fsS https://api.zivoapp.cloud/api/categories > /dev/null; then
-              echo "API health check passed."
-            else
-              echo "API health check failed."
-              exit 1
-            fi
+            for i in {1..10}; do
+              if curl -fsS https://api.zivoapp.cloud/api/categories > /dev/null; then
+                echo "API health check passed."
+                exit 0
+              fi
 
-            echo "Deployment and health check successful."
+              echo "API not ready yet. Retry $i/10..."
+              sleep 3
+            done
+
+            echo "API health check failed."
+            exit 1

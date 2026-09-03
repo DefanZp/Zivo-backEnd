@@ -21,6 +21,8 @@ jobs:
             git pull origin main 
             docker compose up -d --build
 
+            docker compose restart nginx
+
             echo "Checking API health..."
             
             if curl -fsS https://api.zivoapp.cloud/api/categories > /dev/null; then

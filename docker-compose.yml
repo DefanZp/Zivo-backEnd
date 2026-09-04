@@ -52,10 +52,18 @@ services:
       - /etc/letsencrypt/live/n8n.zivoapp.cloud/fullchain.pem:/etc/nginx/ssl/n8n/fullchain.pem:ro
       - /etc/letsencrypt/live/n8n.zivoapp.cloud/privkey.pem:/etc/nginx/ssl/n8n/privkey.pem:ro
 
+    networks:
+      - default
+      - zivo-proxy
+
     depends_on:
       - app
 
 volumes:
   zivo-postgres-data:
+
+networks:
+  zivo-proxy:
+    external: true
 
 

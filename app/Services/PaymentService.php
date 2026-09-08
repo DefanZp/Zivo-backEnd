@@ -271,6 +271,7 @@ class PaymentService
                 DB::afterCommit(function () use ($payment) {
                     // ambil payment setelah diproses tadi agar datanya terbaru
                     $freshPayment = Payment::with([
+                        'order.user',
                         'order.items.product',
                         'order.payment'
                     ])->find($payment->id);
@@ -436,6 +437,10 @@ class PaymentService
                     config('services.n8n.payment_webhook_url'),
                     [
                         'event' => 'payment.settled',
+                        'customer' => [
+                            'name' => $payment->order->user->name,
+                            'email' => $payment->order->user->email,
+                        ],
                         'order' => [
                             'id' => $payment->order_id,
                             'status' => $payment->order->status,

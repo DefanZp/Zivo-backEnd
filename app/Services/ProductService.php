@@ -89,4 +89,12 @@ class ProductService
     {
         return Product::findOrFail($id);
     }
+
+    // cari product dengan stock rendah
+    public function getLowStockProduct(int $threshold = 20)
+    {
+        return Product::where('stock', '<', $threshold)
+            ->orderBy('stock')
+            ->get();
+    }
 }

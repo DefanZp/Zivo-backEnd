@@ -65,6 +65,8 @@ Route::middleware(['auth:sanctum', 'admin'])
 
         Route::get('/dashboard', [AdminDashboardController::class, 'index']);
 
+        Route::get('/products/low-stock', [ProductController::class, 'lowStock']);
+
         Route::post('/products', [AdminProductController::class, 'store']);
         Route::put('/products/{id}', [AdminProductController::class, 'update']);
         Route::delete('/products/{id}', [AdminProductController::class, 'destroy']);

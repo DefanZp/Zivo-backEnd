@@ -53,4 +53,15 @@ class ProductController extends Controller
             'data' => $product
         ], 200);
     }
+
+    public function lowStock(): JsonResponse
+    {
+        $products = $this->productService->getLowStockProduct();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data produk dengan stock rendah berhasil diambil',
+            'data' => $products
+        ], 200);
+    }
 }

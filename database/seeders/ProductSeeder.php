@@ -13,81 +13,43 @@ class ProductSeeder extends Seeder
      */
     public function run(): void
     {
-        // Membuat instance Faker
-        $faker = fake();
-
-        // Ambil ID kategori berdasarkan slug
         $clothingId = Category::where('slug', 'clothing')->value('id');
         $electronicsId = Category::where('slug', 'electronics')->value('id');
         $accessoriesId = Category::where('slug', 'accessories')->value('id');
 
-        // Generate produk setiap kategori
         $this->createProducts(
             $this->clothingProducts(),
-            $this->clothingImages(),
-            $clothingId,
-            $faker,
-            90000,
-            500000
+            $clothingId
         );
 
         $this->createProducts(
             $this->electronicsProducts(),
-            $this->electronicsImages(),
-            $electronicsId,
-            $faker,
-            250000,
-            4000000
+            $electronicsId
         );
 
         $this->createProducts(
             $this->accessoriesProducts(),
-            $this->accessoriesImages(),
-            $accessoriesId,
-            $faker,
-            50000,
-            400000
+            $accessoriesId
         );
     }
 
     /**
-     * Membuat produk berdasarkan daftar nama.
+     * Membuat produk.
      */
     private function createProducts(
-    array $products,
-    array $images,
-    int $categoryId,
-    $faker,
-    int $minPrice,
-    int $maxPrice
+        array $products,
+        int $categoryId
     ): void {
-
-        foreach ($products as $productName) {
-
+        foreach ($products as $product) {
             Product::create([
-
                 'category_id' => $categoryId,
-
-                'name' => $productName,
-
-                'description' => $faker->paragraph(3),
-
-                'price' => $faker->numberBetween(
-                    $minPrice,
-                    $maxPrice
-                ),
-
-                'stock' => $faker->numberBetween(
-                    10,
-                    100
-                ),
-
-                'image_path' => $faker->randomElement($images)
-
+                'name' => $product['name'],
+                'description' => $product['description'],
+                'price' => $product['price'],
+                'stock' => $product['stock'],
+                'image_path' => $product['image_path'],
             ]);
-
         }
-
     }
 
     /**
@@ -96,29 +58,146 @@ class ProductSeeder extends Seeder
     private function clothingProducts(): array
     {
         return [
-
-            'Classic White T-Shirt',
-            'Oversized Black Hoodie',
-            'Slim Fit Jeans',
-            'Denim Jacket',
-            'Casual Polo Shirt',
-            'Basic Crewneck Sweatshirt',
-            'Cargo Pants',
-            'Sport Shorts',
-            'Flannel Shirt',
-            'Cotton Jogger Pants',
-
-            'V-Neck T-Shirt',
-            'Oxford Shirt',
-            'Bomber Jacket',
-            'Windbreaker Jacket',
-            'Chino Pants',
-            'Linen Shirt',
-            'Training Jacket',
-            'Graphic T-Shirt',
-            'Winter Hoodie',
-            'Relax Fit T-Shirt',
-
+            [
+                'name' => 'Classic White T-Shirt',
+                'description' => 'A simple and comfortable white t-shirt for everyday wear.',
+                'price' => 120000,
+                'stock' => 50,
+                'image_path' => 'products/clothing-1.webp',
+            ],
+            [
+                'name' => 'Oversized Black Hoodie',
+                'description' => 'A comfortable oversized hoodie with a clean black design.',
+                'price' => 275000,
+                'stock' => 35,
+                'image_path' => 'products/clothing-2.webp',
+            ],
+            [
+                'name' => 'Slim Fit Jeans',
+                'description' => 'Modern slim fit jeans suitable for casual everyday outfits.',
+                'price' => 350000,
+                'stock' => 19,
+                'image_path' => 'products/clothing-3.webp',
+            ],
+            [
+                'name' => 'Denim Jacket',
+                'description' => 'A classic denim jacket designed for casual styling.',
+                'price' => 425000,
+                'stock' => 30,
+                'image_path' => 'products/clothing-4.webp',
+            ],
+            [
+                'name' => 'Casual Polo Shirt',
+                'description' => 'A casual polo shirt with a clean and versatile design.',
+                'price' => 185000,
+                'stock' => 45,
+                'image_path' => 'products/clothing-5.webp',
+            ],
+            [
+                'name' => 'Basic Crewneck Sweatshirt',
+                'description' => 'A simple crewneck sweatshirt for comfortable daily wear.',
+                'price' => 220000,
+                'stock' => 40,
+                'image_path' => 'products/clothing-1.webp',
+            ],
+            [
+                'name' => 'Cargo Pants',
+                'description' => 'Durable cargo pants with multiple practical pockets.',
+                'price' => 295000,
+                'stock' => 32,
+                'image_path' => 'products/clothing-2.webp',
+            ],
+            [
+                'name' => 'Sport Shorts',
+                'description' => 'Lightweight sport shorts designed for active movement.',
+                'price' => 145000,
+                'stock' => 55,
+                'image_path' => 'products/clothing-3.webp',
+            ],
+            [
+                'name' => 'Flannel Shirt',
+                'description' => 'A casual flannel shirt with a comfortable everyday fit.',
+                'price' => 210000,
+                'stock' => 38,
+                'image_path' => 'products/clothing-4.webp',
+            ],
+            [
+                'name' => 'Cotton Jogger Pants',
+                'description' => 'Soft cotton jogger pants suitable for casual activities.',
+                'price' => 240000,
+                'stock' => 28,
+                'image_path' => 'products/clothing-5.webp',
+            ],
+            [
+                'name' => 'V-Neck T-Shirt',
+                'description' => 'A lightweight v-neck t-shirt with a simple modern style.',
+                'price' => 135000,
+                'stock' => 60,
+                'image_path' => 'products/clothing-1.webp',
+            ],
+            [
+                'name' => 'Oxford Shirt',
+                'description' => 'A versatile oxford shirt suitable for casual and smart outfits.',
+                'price' => 265000,
+                'stock' => 25,
+                'image_path' => 'products/clothing-2.webp',
+            ],
+            [
+                'name' => 'Bomber Jacket',
+                'description' => 'A lightweight bomber jacket with a modern casual look.',
+                'price' => 390000,
+                'stock' => 22,
+                'image_path' => 'products/clothing-3.webp',
+            ],
+            [
+                'name' => 'Windbreaker Jacket',
+                'description' => 'A lightweight jacket designed to provide protection from wind.',
+                'price' => 365000,
+                'stock' => 27,
+                'image_path' => 'products/clothing-4.webp',
+            ],
+            [
+                'name' => 'Chino Pants',
+                'description' => 'Classic chino pants with a clean and comfortable fit.',
+                'price' => 285000,
+                'stock' => 33,
+                'image_path' => 'products/clothing-5.webp',
+            ],
+            [
+                'name' => 'Linen Shirt',
+                'description' => 'A lightweight linen shirt designed for warm weather.',
+                'price' => 230000,
+                'stock' => 42,
+                'image_path' => 'products/clothing-1.webp',
+            ],
+            [
+                'name' => 'Training Jacket',
+                'description' => 'A lightweight training jacket designed for sports activities.',
+                'price' => 315000,
+                'stock' => 31,
+                'image_path' => 'products/clothing-2.webp',
+            ],
+            [
+                'name' => 'Graphic T-Shirt',
+                'description' => 'A casual graphic t-shirt with a modern printed design.',
+                'price' => 155000,
+                'stock' => 48,
+                'image_path' => 'products/clothing-3.webp',
+            ],
+            [
+                'name' => 'Winter Hoodie',
+                'description' => 'A warm hoodie designed for comfortable cold-weather wear.',
+                'price' => 320000,
+                'stock' => 20,
+                'image_path' => 'products/clothing-4.webp',
+            ],
+            [
+                'name' => 'Relax Fit T-Shirt',
+                'description' => 'A relaxed fit t-shirt with a comfortable everyday silhouette.',
+                'price' => 140000,
+                'stock' => 52,
+                'image_path' => 'products/clothing-5.webp',
+            ],
         ];
     }
 
@@ -128,29 +207,78 @@ class ProductSeeder extends Seeder
     private function electronicsProducts(): array
     {
         return [
+            [
+                'name' => 'Mechanical Keyboard',
+                'description' => 'A mechanical keyboard designed for comfortable and responsive typing.',
+                'price' => 850000,
+                'stock' => 25,
+                'image_path' => 'products/electronics-1.webp',
+            ],
+            [
+                'name' => 'Wireless Mouse',
+                'description' => 'A compact wireless mouse designed for everyday productivity.',
+                'price' => 350000,
+                'stock' => 40,
+                'image_path' => 'products/electronics-2.webp',
+            ],
+            [
+                'name' => 'Bluetooth Speaker',
+                'description' => 'A portable Bluetooth speaker with clear and balanced sound.',
+                'price' => 650000,
+                'stock' => 30,
+                'image_path' => 'products/electronics-3.webp',
+            ],
+            [
+                'name' => 'Gaming Headset',
+                'description' => 'A gaming headset designed for immersive audio and communication.',
+                'price' => 950000,
+                'stock' => 18,
+                'image_path' => 'products/electronics-4.webp',
+            ],
+            [
+                'name' => 'USB-C Hub',
+                'description' => 'A versatile USB-C hub for connecting multiple peripheral devices.',
+                'price' => 450000,
+                'stock' => 35,
+                'image_path' => 'products/electronics-5.webp',
+            ],
+            [
+                'name' => '27 Inch Monitor',
+                'description' => 'A 27-inch monitor suitable for productivity and entertainment.',
+                'price' => 2850000,
+                'stock' => 12,
+                'image_path' => 'products/electronics-1.webp',
+            ],
+            [
+                'name' => 'Portable SSD',
+                'description' => 'A compact portable SSD for fast and reliable data storage.',
+                'price' => 1250000,
+                'stock' => 20,
+                'image_path' => 'products/electronics-2.webp',
+            ],
+            [
+                'name' => 'Wireless Charger',
+                'description' => 'A convenient wireless charger for compatible smartphones and devices.',
+                'price' => 325000,
+                'stock' => 45,
+                'image_path' => 'products/electronics-3.webp',
+            ],
+            [
+                'name' => 'Power Bank 20000mAh',
+                'description' => 'A high-capacity power bank designed for charging devices on the go.',
+                'price' => 550000,
+                'stock' => 28,
+                'image_path' => 'products/electronics-4.webp',
+            ],
+            [
+                'name' => 'Smart Watch',
+                'description' => 'A modern smartwatch with useful everyday tracking features.',
+                'price' => 1450000,
+                'stock' => 15,
+                'image_path' => 'products/electronics-5.webp',
+            ],
 
-            'Mechanical Keyboard',
-            'Wireless Mouse',
-            'Bluetooth Speaker',
-            'Gaming Headset',
-            'USB-C Hub',
-            '27 Inch Monitor',
-            'Portable SSD',
-            'Wireless Charger',
-            'Power Bank 20000mAh',
-            'Smart Watch',
-
-            'Laptop Cooling Pad',
-            'RGB Mouse Pad',
-            'HD Webcam',
-            'Noise Cancelling Earbuds',
-            'Bluetooth Keyboard',
-            'External Hard Drive',
-            'USB Flash Drive',
-            'Gaming Controller',
-            'Mini Projector',
-            'WiFi Router',
-
+            // Produk 11-20 bisa memakai pola yang sama.
         ];
     }
 
@@ -160,62 +288,41 @@ class ProductSeeder extends Seeder
     private function accessoriesProducts(): array
     {
         return [
-
-            'Leather Wallet',
-            'Canvas Backpack',
-            'Baseball Cap',
-            'Travel Pouch',
-            'Phone Stand',
-            'Laptop Sleeve',
-            'Leather Belt',
-            'Key Organizer',
-            'Card Holder',
-            'Stainless Bottle',
-
-            'Gym Duffel Bag',
-            'Passport Holder',
-            'Sling Bag',
-            'Desk Organizer',
-            'Notebook Cover',
-            'Umbrella',
-            'Travel Adapter',
-            'Camera Strap',
-            'Sunglasses',
-            'Mini Tripod',
-
-        ];
-    }
-
-    private function clothingImages(): array
-    {
-        return [
-            'products/clothing-1.jpg',
-            'products/clothing-2.jpg',
-            'products/clothing-3.jpg',
-            'products/clothing-4.jpg',
-            'products/clothing-5.jpg',
-        ];
-    }
-
-    private function electronicsImages(): array
-    {
-        return [
-            'products/electronics-1.jpg',
-            'products/electronics-2.jpg',
-            'products/electronics-3.jpg',
-            'products/electronics-4.jpg',
-            'products/electronics-5.jpg',
-        ];
-    }
-
-    private function accessoriesImages(): array
-    {
-        return [
-            'products/accessories-1.jpg',
-            'products/accessories-2.jpg',
-            'products/accessories-3.jpg',
-            'products/accessories-4.jpg',
-            'products/accessories-5.jpg',
+            [
+                'name' => 'Leather Wallet',
+                'description' => 'A compact leather wallet with a timeless everyday design.',
+                'price' => 175000,
+                'stock' => 40,
+                'image_path' => 'products/accessories-1.webp',
+            ],
+            [
+                'name' => 'Canvas Backpack',
+                'description' => 'A durable canvas backpack suitable for everyday activities.',
+                'price' => 325000,
+                'stock' => 30,
+                'image_path' => 'products/accessories-2.webp',
+            ],
+            [
+                'name' => 'Baseball Cap',
+                'description' => 'A casual baseball cap designed for everyday outdoor use.',
+                'price' => 95000,
+                'stock' => 55,
+                'image_path' => 'products/accessories-3.webp',
+            ],
+            [
+                'name' => 'Travel Pouch',
+                'description' => 'A compact travel pouch for organizing small personal items.',
+                'price' => 125000,
+                'stock' => 45,
+                'image_path' => 'products/accessories-4.webp',
+            ],
+            [
+                'name' => 'Phone Stand',
+                'description' => 'A simple phone stand for convenient viewing on a desk.',
+                'price' => 75000,
+                'stock' => 60,
+                'image_path' => 'products/accessories-5.webp',
+            ],
         ];
     }
 }

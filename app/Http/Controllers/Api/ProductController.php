@@ -32,8 +32,8 @@ class ProductController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data produk berhasil diambil',
-            'data' => $products
-        ], 200);
+            'data' => $products,
+        ]);
     }
 
     public function show(Int $id): JsonResponse
@@ -50,8 +50,8 @@ class ProductController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data produk berhasil diambil',
-            'data' => $product
-        ], 200);
+            'data' => $product,
+        ]);
     }
 
     public function lowStock(): JsonResponse
@@ -60,8 +60,8 @@ class ProductController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Data produk dengan stock rendah berhasil diambil',
-            'data' => $products
-        ], 200);
+            'message' => 'Data produk dengan stok rendah berhasil diambil',
+            'data' => $products,
+        ]);
     }
 }

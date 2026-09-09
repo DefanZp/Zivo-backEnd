@@ -4,8 +4,6 @@ namespace App\Services;
 
 use App\Models\Product;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\ValidationException;
 
 class ProductService
 {
@@ -108,7 +106,7 @@ class ProductService
         if ($product->image_path) {
             Storage::disk('public')->delete($product->image_path);
         }
-        
+
         $product->delete();
     }
 

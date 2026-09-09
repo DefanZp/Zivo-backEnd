@@ -20,7 +20,7 @@ class AdminProductController extends Controller
             'description' => 'required|string',
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
-            'image_path' => 'required|string|max:255',
+            'image' => 'required|image|mimes:jpeg,png,webp|max:5120',
         ]);
 
         $product = $this->productService->createProduct(
@@ -41,7 +41,7 @@ class AdminProductController extends Controller
             'description' => 'sometimes|string',
             'price' => 'sometimes|numeric|min:0',
             'stock' => 'sometimes|integer|min:0',
-            'image_path' => 'sometimes|string|max:255',
+            'image' => 'sometimes|image|mimes:jpeg,png,webp|max:5120',
         ]);
 
         $product = $this->productService->updateProduct(

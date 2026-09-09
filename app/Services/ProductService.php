@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Product;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
@@ -63,12 +64,36 @@ class ProductService
     // Untuk admin
     public function createProduct(array $data): Product
     {
+        if (isset($data['image'])) {
+            $image = $data['image'];
+
+            $imagePath = $image->store('products', 'public');
+
+            $data['image_path'] = $imagePath;
+
+            unset($data['image']);
+        }
+
         return Product::create($data);
     }
 
     public function updateProduct(int $id, array $data): Product
     {
         $product = $this->findProductById($id);
+
+        if (isset($data['image'])) {
+            $image = $data['image'];
+
+            $imagePath = $image->store('products', 'public');
+
+            if ($product->image_path) {
+                Storage::disk('public')->delete($product->image_path);
+            }
+
+            $data['image_path'] = $imagePath;
+
+            unset($data['image']);
+        }
 
         $product->update($data);
 
@@ -80,6 +105,10 @@ class ProductService
     {
         $product = $this->findProductById($id);
 
+        if ($product->image_path) {
+            Storage::disk('public')->delete($product->image_path);
+        }
+        
         $product->delete();
     }
 

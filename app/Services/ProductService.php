@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\Product;
 use Illuminate\Support\Facades\Storage;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 
 class ProductService
 {
@@ -60,12 +62,31 @@ class ProductService
 
 
     // Untuk admin
+
+    private function processImage($image): string 
+    {
+        $manager = new ImageManager(new Driver());
+
+        $image = $manager->read($image);
+
+        $image->scaleDown(1200, 1200);
+
+        $filename = uniqid('product_') . '.webp';
+
+        Storage::disk('public')->put(
+            'products/' . $filename,
+            $image->toWebp(80)
+        );
+
+        return 'products/' . $filename;
+    }
+
     public function createProduct(array $data): Product
     {
         if (isset($data['image'])) {
             $image = $data['image'];
 
-            $imagePath = $image->store('products', 'public');
+            $imagePath = $this->processImage($image);
 
             $data['image_path'] = $imagePath;
 
@@ -77,12 +98,13 @@ class ProductService
 
     public function updateProduct(int $id, array $data): Product
     {
+
         $product = $this->findProductById($id);
 
         if (isset($data['image'])) {
             $image = $data['image'];
 
-            $imagePath = $image->store('products', 'public');
+            $imagePath = $this->processImage($image);
 
             if ($product->image_path) {
                 Storage::disk('public')->delete($product->image_path);

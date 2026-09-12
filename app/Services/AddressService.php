@@ -24,13 +24,19 @@ class AddressService
         // gunakan transaction karena ada beberapa query (update dan insert)
         return DB::transaction(function () use ($userId, $data) {
 
-            if ($data['is_default']) {
+            $hasAddress = Address::where('user_id', $userId)
+                ->exists();
+
+            // is default true jika belum ada address sama sekali atau jika address yang di create ini is_default true
+            $isDefault = !$hasAddress || ($data['is_default'] ?? false);
+
+            // jika address yang di create ini is_default true, maka set semua address lainnya menjadi non default
+            if ($isDefault) {
                 Address::where('user_id', $userId)
                     ->update([
                         'is_default' => false
                     ]);
-            }
-            
+            }            
 
             return Address::create([
                 'user_id' => $userId,
@@ -49,7 +55,7 @@ class AddressService
                 'postal_code' => $data['postal_code'],
                 'latitude' => $data['latitude'] ?? null,
                 'longitude' => $data['longitude'] ?? null,
-                'is_default' => $data['is_default'] ?? false,
+                'is_default' => $isDefault
             ]);
         });
     }

@@ -10,7 +10,7 @@ use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\RegionController;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -33,12 +33,32 @@ Route::get('/regions/subdistricts/{districtId}', [RegionController::class, 'subd
 Route::post('/payments/midtrans/notification', [PaymentController::class, 'handleMidtransNotification']);
 
 // Email verification
-Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-    $request->fulfill();
+Route::get('/email/verify/{id}/{hash}', function (Request $request, $id, $hash) {
+
+    $user = User::findOrFail($id);
+
+    // Pastikan hash email sesuai dengan user
+    if (! hash_equals(
+        sha1($user->getEmailForVerification()),
+        $hash
+    )) {
+        abort(403, 'Invalid verification link.');
+    }
+
+    // Jika email sudah verified
+    if ($user->hasVerifiedEmail()) {
+        return redirect(
+            config('services.frontend.url') . '/auth/email-verified'
+        );
+    }
+
+    // Tandai email sebagai verified
+    $user->markEmailAsVerified();
 
     return redirect(
         config('services.frontend.url') . '/auth/email-verified'
     );
+
 })->middleware(['signed'])->name('verification.verify');
 
 // Customer Api

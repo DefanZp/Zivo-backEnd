@@ -93,4 +93,13 @@ class AuthController extends Controller
             'data' => $result   
         ], 200);
     }
+
+    // Get Current User
+    public function currentUser(Request $request): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $request->user(),
+        ], 200);
+    }
 }

@@ -82,10 +82,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/orders/{id}', [OrderController::class, 'show']);
 
-    Route::post('/orders', [OrderController::class, 'store']);
+    // buat middleware untuk memastikan user sudah verifikasi email sebelum membuat order 
+    Route::post('/orders', [OrderController::class, 'store'])
+        ->middleware('verified');
 
     // Midtrans api 
-    Route::post('/payments/{paymentId}/snap-token', [PaymentController::class, 'createSnapTransaction']);
+    // buat middleware untuk memastikan user sudah verifikasi email sebelum membuat snap token
+    Route::post('/payments/{paymentId}/snap-token', [PaymentController::class, 'createSnapTransaction'])
+        ->middleware('verified');
     Route::get('/payments/{gatewayOrderId}', [PaymentController::class, 'getPaymentByGatewayOrderId']);
 
     // Resend email verification

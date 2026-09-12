@@ -10,6 +10,8 @@ use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\RegionController;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // Public Api
@@ -29,6 +31,15 @@ Route::get('/regions/subdistricts/{districtId}', [RegionController::class, 'subd
 
 // Midtrans api webhook
 Route::post('/payments/midtrans/notification', [PaymentController::class, 'handleMidtransNotification']);
+
+// Email verification
+Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+    $request->fulfill();
+
+    return redirect(
+        config('services.frontend.url') . '/auth/email-verified'
+    );
+})->middleware(['signed'])->name('verification.verify');
 
 // Customer Api
 Route::middleware('auth:sanctum')->group(function () {
@@ -56,6 +67,21 @@ Route::middleware('auth:sanctum')->group(function () {
     // Midtrans api 
     Route::post('/payments/{paymentId}/snap-token', [PaymentController::class, 'createSnapTransaction']);
     Route::get('/payments/{gatewayOrderId}', [PaymentController::class, 'getPaymentByGatewayOrderId']);
+
+    // Resend email verification
+    Route::post('/email/verification-notification', function (Request $request) {
+        if ($request->user()->hasVerifiedEmail()) {
+        return response()->json([
+            'message' => 'Email already verified.'
+        ], 400);
+    }
+        $request->user()->sendEmailVerificationNotification();
+
+        return response()->json([
+            'message' => 'Verification email sent successfully.',
+        ]);
+    })->middleware('throttle:6,1');
+
 });
 
 // Admin Api

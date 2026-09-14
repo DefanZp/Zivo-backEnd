@@ -26,6 +26,10 @@ class ProductController extends Controller
             $request->query('sort'),
 
             $request->query('direction'),
+
+            $request->query('max_price'),
+
+            $request->boolean('in_stock'),
             
         );
 

@@ -15,6 +15,8 @@ class ProductService
         ?int $category = null,
         ?string $sort = null, 
         ?string $direction = null,
+        ?float $maxPrice = null,
+        ?bool $inStock = null,
     )
 
     {
@@ -25,6 +27,14 @@ class ProductService
             $searchLower = strtoLower($search);
 
             $query->whereRaw('LOWER(name) LIKE ?', ["%{$searchLower}%"]);
+        }
+
+        if ($maxPrice !== null) {
+            $query->where('price', '<=', $maxPrice);
+        }
+
+        if ($inStock === true) {
+            $query->where('stock', '>', 0);
         }
 
         $allowedSortColumn = ['price', 'name', 'created_at' ];

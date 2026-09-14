@@ -21,6 +21,7 @@ class AiProductController extends Controller
 
         return response()->json([
             'success' => true,
+            'message' => 'Data produk berhasil diambil',
             'data' => $products,
         ]);
     }

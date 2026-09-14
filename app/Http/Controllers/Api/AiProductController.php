@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use App\Services\ProductService;
 use Illuminate\Http\Request;
 
@@ -21,7 +22,6 @@ class AiProductController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Data produk berhasil diambil',
             'data' => $products,
         ]);
     }

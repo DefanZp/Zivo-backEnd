@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AiProductController;
 use App\Http\Controllers\Api\AddressController;
 use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\AdminOrderController;
@@ -22,6 +23,9 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::get('/categories', [CategoryController::class, 'index']);
+
+// Public Ai Api
+Route::get('/ai/products', [AiProductController::class, 'index']);
 
 // Raja ongkir api
 Route::get('/regions/provinces', [RegionController::class, 'provinces']);

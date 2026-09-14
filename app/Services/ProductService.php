@@ -177,4 +177,58 @@ class ProductService
             ->orderBy('stock')
             ->get();
     }
+
+    // fungsi untuk kebutuhan ai
+    public function searchProductsForAI(
+    ?string $search = null,
+    ?float $maxPrice = null,
+    ?bool $inStock = null
+    ) {
+        $query = Product::query()
+            ->select([
+                'id',
+                'name',
+                'price',
+                'stock',
+                'category_id',
+            ])
+            ->with('category:id,name');
+
+        if ($search) {
+            $searchTerms = preg_split('/\s+/', strtolower(trim($search)));
+
+            foreach ($searchTerms as $term) {
+                if (!$term) {
+                    continue;
+                }
+
+                $query->where(function ($query) use ($term) {
+                    $query->whereRaw('LOWER(name) LIKE ?', ["%{$term}%"])
+                        ->orWhereRaw('LOWER(description) LIKE ?', ["%{$term}%"]);
+                });
+            }
+        }
+
+        if ($maxPrice !== null) {
+            $query->where('price', '<=', $maxPrice);
+        }
+
+        if ($inStock === true) {
+            $query->where('stock', '>', 0);
+        }
+
+        $products = $query
+            ->latest()
+            ->get();
+
+        return $products->map(function ($product) {
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'price' => $product->price,
+                'stock' => $product->stock,
+                'category' => $product->category?->name,
+            ];
+        });
+    }
 }

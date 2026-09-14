@@ -24,9 +24,30 @@ class ProductService
 
         if ($search) {
             
-            $searchLower = strtoLower($search);
+            $searchTerm = preg_split(
+                '/\s+/', 
+                strtoLower(trim($search))
+            );
 
-            $query->whereRaw('LOWER(name) LIKE ?', ["%{$searchLower}%"]);
+            foreach ($searchTerm as $term) {
+
+                if (!$term) {
+                    continue;
+                }
+
+                $query->where(function ($query) use ($term) {
+
+                    $query->whereRaw(
+                        'LOWER(name) LIKE ?',
+                        ["%{$term}%"]
+                    );
+
+                    $query->orWhereRaw(
+                        'LOWER(description) LIKE ?',
+                        ["%{$term}%"]
+                    );
+                });
+            }
         }
 
         if ($maxPrice !== null) {

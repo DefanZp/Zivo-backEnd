@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AddressController;
 use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\AdminOrderController;
 use App\Http\Controllers\Api\AdminProductController;
+use App\Http\Controllers\Api\AgentStateController;
 use App\Http\Controllers\Api\AiProductController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
@@ -26,6 +27,9 @@ Route::get('/categories', [CategoryController::class, 'index']);
 
 // Public Ai Api
 Route::get('/ai/products', [AiProductController::class, 'index']);
+
+Route::get('/ai/state', [AgentStateController::class, 'show']);
+Route::post('/ai/state', [AgentStateController::class, 'store']);
 
 // Raja ongkir api
 Route::get('/regions/provinces', [RegionController::class, 'provinces']);

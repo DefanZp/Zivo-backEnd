@@ -36,6 +36,8 @@ services:
       POSTGRES_DB: zivo
       POSTGRES_USER: zivo_user
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "127.0.0.1:5432:5432"
     volumes:
       - zivo-postgres-data:/var/lib/postgresql/data
 

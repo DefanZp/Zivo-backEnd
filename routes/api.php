@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\AdminProductController;
 use App\Http\Controllers\Api\AgentStateController;
 use App\Http\Controllers\Api\AiProductController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PaymentController;
@@ -87,10 +88,26 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/user/addresses/{id}/default', [AddressController::class, 'setDefault']);
 
     Route::delete('/user/addresses/{id}', [AddressController::class, 'destroy']);
+
+    Route::get('/cart', [CartController::class, 'index']);
+
+    Route::post('/cart/items', [CartController::class, 'store']);
+
+    Route::post('/cart/items/{productId}/increase', [CartController::class, 'increase'])
+        ->whereNumber('productId');
+
+    Route::post('/cart/items/{productId}/decrease', [CartController::class, 'decrease'])
+        ->whereNumber('productId');
+
+    Route::delete('/cart/items/{productId}', [CartController::class, 'destroy'])
+        ->whereNumber('productId');
+
+    Route::delete('/cart', [CartController::class, 'clear']);
     
     Route::get('/orders', [OrderController::class, 'index']);
 
     Route::get('/orders/{id}', [OrderController::class, 'show']);
+    
 
     // buat middleware untuk memastikan user sudah verifikasi email sebelum membuat order 
     Route::post('/orders', [OrderController::class, 'store'])

@@ -33,7 +33,11 @@ class CartService
             $newQuantity = $cartItem->quantity + $quantity;
         }
 
-        $this->validateStock($product, $newQuantity);
+        $this->validateStock(
+            $product,
+            $cartItem?->quantity ?? 0,
+            $newQuantity
+        );
 
         if ($cartItem) {
             $cartItem->update([
@@ -101,12 +105,25 @@ class CartService
         ]);
     }
 
-    private function validateStock(Product $product, int $quantity)
+    private function validateStock(
+        Product $product,
+        int $currentQuantity, 
+        int $requestedQuantity
+        )
     {
-        if ($quantity > $product->stock) {
+        $newQuantity = $currentQuantity + $requestedQuantity;
+
+        if ($newQuantity > $product->stock) {
+
+            $availableToAdd = max(
+                0,
+                $product->stock - $currentQuantity
+            );
+
             throw ValidationException::withMessages([
                 'quantity' => [
-                    "Only {$product->stock} item(s) available for {$product->name}."
+                    "Only {$availableToAdd} more item(s) can be added for {$product->name}. " .
+                    "The cart already contains {$currentQuantity} item(s) and the stock is {$product->stock}."
                 ],
             ]);
         }

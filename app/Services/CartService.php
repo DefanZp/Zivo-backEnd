@@ -36,7 +36,7 @@ class CartService
         $this->validateStock(
             $product,
             $cartItem?->quantity ?? 0,
-            $newQuantity
+            $quantity
         );
 
         if ($cartItem) {

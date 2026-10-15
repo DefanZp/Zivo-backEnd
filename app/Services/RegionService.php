@@ -8,62 +8,85 @@ use Illuminate\Support\Facades\Http;
 
 class RegionService
 {
-    private string $baseurl;
-    private string $apikey;
+    private string $baseUrl;
+    private string $apiKey;
 
-    // inject base url dan api key dari service config
     public function __construct()
     {
-        $this->baseurl = config('services.rajaongkir.base_url');
-        $this->apikey = config('services.rajaongkir.api_key');
+        $this->baseUrl = rtrim(
+            config('services.rajaongkir.base_url'),
+            '/'
+        );
+
+        $this->apiKey = config('services.rajaongkir.api_key');
     }
 
-    public function getProvinces()
+    private function fetch(string $endpoint): array
     {
-        return Cache::remember('regions.provinces', now()->addDays(7), function () {
-            return Http::withHeaders([
-                'key' => $this->apikey,
-            ])->get( 
-                $this->baseurl . 'destination/province')
-                ->json();
-        });
+        $url = $this->baseUrl . '/' . ltrim($endpoint, '/');
+
+        $response = Http::acceptJson()
+            ->withHeaders([
+                'key' => $this->apiKey,
+            ])
+            ->connectTimeout(8)
+            ->timeout(20)
+            ->retry(3, 500)
+            ->get($url);
+
+        $response->throw();
+
+        $data = $response->json();
+
+        if (!is_array($data)) {
+            throw new \UnexpectedValueException(
+                'RajaOngkir returned an invalid response.'
+            );
+        }
+
+        return $data;
     }
 
-    public function getCities(string $provinceId)
-    {
+    private function rememberRegion(
+        string $cacheKey,
+        string $endpoint
+    ): array {
         return Cache::remember(
-            "regions.cities.{$provinceId}", now()->addDays(7), function () use($provinceId) {
-                return Http::withHeaders([
-                    'key' => $this->apikey,
-                ])->get(
-                    $this->baseurl . 'destination/city/' . $provinceId
-                )->json();
-        });
-    }
-
-    public function getDistricts(string $cityId)
-    {
-        return Cache::remember(
-            "regions.districts.{$cityId}", now()->addDays(7), function () use ($cityId) {
-                return Http::withHeaders([
-                    'key' => $this->apikey,
-                ])->get(
-                    $this->baseurl . 'destination/district/' . $cityId
-                )->json();
-            }
+            $cacheKey,
+            now()->addDays(7),
+            fn () => $this->fetch($endpoint)
         );
     }
 
-    public function getSubdistricts(string $districtId)
+    public function getProvinces(): array
     {
-        return Cache::remember(
-            "regions.subdistricts.{$districtId}", now()->addDays(7), function () use ($districtId) {
-                return Http::withHeaders([
-                    'key' => $this->apikey,
-                ])->get(
-                    $this->baseurl . 'destination/sub-district/' . $districtId
-                )->json();
-            }
+        return $this->rememberRegion(
+            'regions.provinces',
+            'destination/province'
+        );
+    }
+
+    public function getCities(string $provinceId): array
+    {
+        return $this->rememberRegion(
+            "regions.cities.{$provinceId}",
+            "destination/city/{$provinceId}"
+        );
+    }
+
+    public function getDistricts(string $cityId): array
+    {
+        return $this->rememberRegion(
+            "regions.districts.{$cityId}",
+            "destination/district/{$cityId}"
+        );
+    }
+
+    public function getSubdistricts(string $districtId): array
+    {
+        return $this->rememberRegion(
+            "regions.subdistricts.{$districtId}",
+            "destination/sub-district/{$districtId}"
         );
     }
 }

@@ -159,7 +159,7 @@ class OrderService
             'payment'
             ])
             ->latest()
-            ->paginate(12);
+            ->paginate(5);
     }
 
     public function getOrderById(int $id): ?Order

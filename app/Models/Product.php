@@ -5,10 +5,26 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Override;
 
 class Product extends Model
 {
-    protected $fillable = ['category_id', 'name', 'description', 'price', 'stock', 'image_path'];
+    protected $fillable = [
+        'category_id', 
+        'name', 
+        'description', 
+        'price', 
+        'stock', 
+        'image_path', 
+        'specifications'
+    ];
+
+    protected function casts(): array 
+    {
+        return [
+            'specifications' => 'array',
+        ];
+    }
 
     protected $appends = [
         'image_url',

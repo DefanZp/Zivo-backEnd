@@ -60,4 +60,8 @@ return [
     'frontend' => [
         'url' => env('FRONTEND_URL'),
     ],  
+
+    'ai' => [
+        'url' => env('AI_SERVICE_URL', 'http://127.0.0.1:8001'),
+    ],
 ];

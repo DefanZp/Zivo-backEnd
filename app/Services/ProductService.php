@@ -188,6 +188,8 @@ class ProductService
             ->select([
                 'id',
                 'name',
+                'description',
+                'specifications',
                 'price',
                 'stock',
                 'category_id',
@@ -225,6 +227,8 @@ class ProductService
             return [
                 'id' => $product->id,
                 'name' => $product->name,
+                'description' => $product->description,
+                'specifications' => $product->specifications ?? [],
                 'price' => $product->price,
                 'stock' => $product->stock,
                 'category' => $product->category?->name,

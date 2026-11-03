@@ -1,564 +1,262 @@
 # Zivo Backend
 
-**The REST API powering Zivo, an AI-powered e-commerce platform.**
+The Laravel REST API and business-logic layer for **Zivo**, an e-commerce platform with an integrated AI Shopping Assistant.
 
-Zivo Backend is the server-side application responsible for managing the platform's core e-commerce functionality, including authentication, product catalog, shopping cart, order processing, payments, and customer addresses.
+This service is responsible for user identity, authorization, product catalog data, carts, checkout, orders, payment state, delivery addresses, region lookup, and administrator operations. Laravel remains the source of truth for transactional data used by the frontend and AI service.
 
-Built with Laravel 12, the backend follows a Service Layer Architecture to separate business logic from HTTP request handling. It also integrates with external services such as Midtrans, RajaOngkir, n8n, and Zivo's AI Service.
+## Related Services
 
-## Related Repositories
-
-| Repository | Description |
-|---|---|
-| [Zivo Frontend](https://github.com/DefanZp/Zivo-frontEnd-next) | Next.js frontend application |
-| [Zivo Backend](https://github.com/DefanZp/Zivo-backEnd) | Laravel REST API |
-| [Zivo AI Service](https://github.com/DefanZp/Zivo-ai) | AI shopping assistant powered by Python and LangGraph |
-| [Zivo n8n](https://github.com/DefanZp/Zivo-n8n) | Workflow automation |
+- **Frontend:** https://zivo-front-end-next-5uvw.vercel.app/
+- **Backend API:** https://api.zivoapp.cloud
+- [Frontend Repository](https://github.com/DefanZp/Zivo-frontEnd-next)
+- [AI Service Repository](https://github.com/DefanZp/Zivo-ai)
+- [n8n Repository](https://github.com/DefanZp/Zivo-n8n)
 
 ## Features
 
-### Authentication & User Management
-- User registration and login.
-- Token-based authentication using Laravel Sanctum.
-- Email verification.
-- Customer profile management.
-- Role-based access control for administrators.
-
-### Product Management
-- Retrieve and search products.
-- Filter products by category, price, and stock availability.
-- Sort and paginate product listings.
-- Admin product creation, updates, and deletion.
-- Product image processing and WebP conversion.
-- Low-stock product monitoring.
-
-### Shopping Cart & Orders
-- Add products to the shopping cart.
-- Increase and decrease item quantities.
-- Remove individual items or clear the cart.
-- Manage customer shipping addresses.
-- Create and retrieve customer orders.
-- Validate product availability during checkout.
-- Automatically update product stock when an order is created.
-- Restore product stock when an eligible order is cancelled.
-
-### Payment Integration
-- Midtrans Snap transaction creation.
-- Payment notification handling through webhooks.
-- Payment status synchronization.
-- Order status updates based on payment results.
-
-### Shipping & Regional Data
-- Retrieve provinces, cities, districts, and subdistricts through RajaOngkir.
-- Cache regional data to reduce repeated external API requests.
-
-### AI Shopping Assistant Integration
-- Connect the backend to Zivo AI Service.
-- Provide product data for AI-powered product discovery.
-- Forward authenticated customer messages to the AI Service.
-- Store and retrieve AI agent state.
-
-### Workflow Automation
-- Send order-created events to n8n.
-- Send payment-settled events to n8n.
-- Process webhook requests using Laravel queued jobs.
-- Retry failed webhook jobs.
-
-### Admin Management
-- Dashboard data.
-- Low-stock product monitoring.
-- Product management.
-- Order management and status updates.
-
-## Technology Stack
-
-| Technology | Purpose |
-|---|---|
-| PHP 8.2+ | Backend programming language |
-| Laravel 12 | Backend framework |
-| PostgreSQL | Relational database |
-| Laravel Sanctum | API authentication |
-| Eloquent ORM | Database interaction |
-| Laravel Queue | Background job processing |
-| Midtrans | Payment gateway |
-| RajaOngkir | Regional and shipping data |
-| n8n | Workflow automation |
-| FastAPI / LangGraph | AI Service integration |
-| Intervention Image | Product image processing |
-| PHPUnit | Automated testing |
-| Docker | Containerized application build |
+- Registration, login, logout, and email verification.
+- Sanctum token authentication and role-based administrator authorization.
+- Product catalog, search/filter/pagination, categories, and administrator product CRUD.
+- Product image upload, resizing, and WebP conversion through Intervention Image.
+- User-scoped shopping carts and cart item operations.
+- Address management and default delivery address selection.
+- Region lookup through RajaOngkir endpoints.
+- Transactional checkout, stock validation, and product row locking.
+- Customer order history and administrator order management.
+- Midtrans Snap transaction creation and payment notification handling.
+- Dashboard statistics and low-stock product retrieval.
+- AI-oriented product catalog endpoint and authenticated AI chat endpoint.
+- n8n webhook jobs for order-created and payment-settled events.
 
 ## Architecture
 
-The backend uses a Service Layer Architecture to keep controllers focused on handling HTTP requests and responses while business logic is managed by dedicated services.
-
-### Request Flow
+The backend follows a Service Layer structure:
 
 ```text
-Client Applications
-        |
-        v
-    API Routes
-        |
-        v
-   Middleware
-        |
-        v
-   Controllers
-        |
-        v
-  Service Layer
-        |
-        +--------------------+
-        |                    |
-        v                    v
-   Eloquent ORM       External Services
-        |                    |
-        v                    +---- Midtrans
-    PostgreSQL               +---- RajaOngkir
-                             +---- AI Service
-                             +---- n8n
+API Route
+    |
+    v
+Controller
+    |
+    v
+Service
+    |
+    v
+Eloquent Model
+    |
+    v
+PostgreSQL
 ```
 
-### Service Layer
+Controllers handle HTTP input, validation, and JSON responses. Services contain application and business operations. Eloquent models define data relationships, casts, and persistence behavior.
 
-Business logic is organized into dedicated service classes.
+Key services include `AuthService`, `ProductService`, `CategoryService`, `CartService`, `OrderService`, `PaymentService`, `AddressService`, `RegionService`, `AiService`, `AgentStateService`, and `DashboardService`.
 
-```text
-app/
-├── Http/
-│   ├── Controllers/
-│   │   └── Api/
-│   └── Middleware/
-│
-├── Jobs/
-│   ├── SendOrderCreatedWebhook.php
-│   └── SendPaymentSettledWebhook.php
-│
-├── Models/
-│
-└── Services/
-    ├── AddressService.php
-    ├── AgentStateService.php
-    ├── AiService.php
-    ├── AuthService.php
-    ├── CartService.php
-    ├── CategoryService.php
-    ├── DashboardService.php
-    ├── OrderService.php
-    ├── PaymentService.php
-    ├── ProductService.php
-    └── RegionService.php
-```
+## Core Business Logic
 
-Each service is responsible for a specific part of the application:
+### Checkout and stock consistency
 
-| Service | Responsibility |
+The checkout endpoint receives an address ID and an item list. The backend verifies address ownership, locks the selected product rows with `lockForUpdate()`, validates stock, calculates totals using current product data, creates the order and order items, reduces stock, and creates the payment record inside a database transaction. Order-created webhook work is dispatched after the transaction commits.
+
+The checkout service uses the submitted item IDs and quantities; it does not read the cart table as the source of checkout items. The frontend currently builds the order payload from the cart.
+
+### Order lifecycle
+
+The inspected backend accepts these order statuses:
+
+- `pending`
+- `processing`
+- `completed`
+- `cancelled`
+
+A successful Midtrans `settlement` or `capture` marks the payment as paid and moves the order to `processing`. Expired payments use the cancellation flow, which restores stock. Admin cancellation also restores stock, subject to the service's transition rules.
+
+### Payment integration
+
+The backend creates Midtrans Snap transactions and processes payment notifications. Notification signatures are calculated with SHA-512 and compared using `hash_equals()`. Payment records are locked while sensitive notification state changes are processed.
+
+**Known payment gap:** in the inspected source, Midtrans `cancel` and `deny` mark the payment as `failed` but do not cancel the order or restore stock. Snap creation accepts `unpaid` payments, so the current flow does not provide a retry path for a failed payment. Resolve this lifecycle before describing all payment failure paths as fully handled.
+
+## API Reference
+
+All routes below are registered in `routes/api.php`. Laravel's API route prefix is `/api`.
+
+### Public endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/products` | List/search/filter products |
+| GET | `/api/products/{id}` | Product detail |
+| GET | `/api/categories` | List categories |
+| POST | `/api/register` | Register a customer |
+| POST | `/api/login` | Login and issue a token |
+| GET | `/api/ai/products` | Product data for AI retrieval |
+| GET | `/api/regions/provinces` | List provinces |
+| GET | `/api/regions/cities/{provinceId}` | List cities |
+| GET | `/api/regions/districts/{cityId}` | List districts |
+| GET | `/api/regions/subdistricts/{districtId}` | List subdistricts |
+| POST | `/api/payments/midtrans/notification` | Midtrans notification webhook |
+| GET | `/api/email/verify/{id}/{hash}` | Signed email verification link; redirects to frontend |
+
+### Authenticated customer endpoints
+
+These routes require `auth:sanctum`, and some operations additionally require a verified email.
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/logout` | Revoke current token |
+| GET | `/api/user/profile` | Get current user |
+| PUT | `/api/user/profile` | Update profile |
+| GET, POST | `/api/user/addresses` | List/create addresses |
+| PUT | `/api/user/addresses/{id}` | Update address |
+| PATCH | `/api/user/addresses/{id}/default` | Set default address |
+| DELETE | `/api/user/addresses/{id}` | Delete address |
+| GET | `/api/cart` | Get cart |
+| POST | `/api/cart/items` | Add item to cart |
+| POST | `/api/cart/items/{productId}/increase` | Increase item quantity |
+| POST | `/api/cart/items/{productId}/decrease` | Decrease item quantity |
+| DELETE | `/api/cart/items/{productId}` | Remove cart item |
+| DELETE | `/api/cart` | Clear cart |
+| GET | `/api/orders` | List current user's orders |
+| GET | `/api/orders/{id}` | Get order detail |
+| POST | `/api/orders` | Create order; verified email required |
+| POST | `/api/payments/{paymentId}/snap-token` | Create Snap token; verified email required |
+| GET | `/api/payments/{gatewayOrderId}` | Get payment by gateway order ID |
+| POST | `/api/email/verification-notification` | Resend verification email; throttled |
+| POST | `/api/ai/chat` | Authenticated AI chat endpoint |
+
+### Administrator endpoints
+
+These routes require both `auth:sanctum` and the `admin` middleware.
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/admin/dashboard` | Dashboard statistics |
+| GET | `/api/admin/products/low-stock` | Low-stock products |
+| POST | `/api/admin/products` | Create product |
+| PUT | `/api/admin/products/{id}` | Update product |
+| DELETE | `/api/admin/products/{id}` | Delete product |
+| GET | `/api/admin/orders` | List orders |
+| GET | `/api/admin/orders/{id}` | Order detail |
+| PATCH | `/api/admin/orders/{id}` | Update order status |
+
+> The `/api/ai/state` routes in the inspected source do not currently have authentication or user-ownership middleware. They are intentionally omitted from the supported endpoint list here and should be secured before being exposed as a public API contract.
+
+## Technology Stack
+
+| Area | Technology |
 |---|---|
-| `AuthService` | Registration, login, and profile updates |
-| `ProductService` | Product retrieval, filtering, and management |
-| `CategoryService` | Product category management |
-| `CartService` | Shopping cart operations and stock validation |
-| `AddressService` | Customer address management |
-| `OrderService` | Order creation, cancellation, stock management, and status transitions |
-| `PaymentService` | Midtrans transactions and payment status handling |
-| `RegionService` | RajaOngkir regional data retrieval and caching |
-| `AiService` | Communication with the AI Service |
-| `AgentStateService` | AI agent state persistence |
-| `DashboardService` | Admin dashboard data |
+| Framework | Laravel 12.62.0 |
+| Language | PHP `^8.2` |
+| Authentication | Laravel Sanctum 4.3.2 |
+| Database | PostgreSQL 16 in Docker Compose |
+| Payment | Midtrans PHP SDK 2.6.2 |
+| Image processing | Intervention Image 3.11.8 |
+| Web server | Nginx |
+| Runtime | PHP-FPM 8.3 in Docker |
+| Queue | Laravel Queue Worker |
+| Automation | n8n webhooks |
+| Shipping provider | RajaOngkir region lookup |
 
-## API Endpoints
-
-All API endpoints are prefixed with `/api`.
-
-### Public Endpoints
-
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/products` | Retrieve products |
-| GET | `/products/{id}` | Retrieve product details |
-| GET | `/categories` | Retrieve product categories |
-| POST | `/register` | Register a customer |
-| POST | `/login` | Authenticate a user |
-| GET | `/ai/products` | Retrieve product data for AI |
-| GET | `/ai/state` | Retrieve AI agent state |
-| POST | `/ai/state` | Store AI agent state |
-| GET | `/regions/provinces` | Retrieve provinces |
-| GET | `/regions/cities/{provinceId}` | Retrieve cities |
-| GET | `/regions/districts/{cityId}` | Retrieve districts |
-| GET | `/regions/subdistricts/{districtId}` | Retrieve subdistricts |
-| POST | `/payments/midtrans/notification` | Handle Midtrans notifications |
-| GET | `/email/verify/{id}/{hash}` | Verify customer email |
-
-### Customer Endpoints
-
-These endpoints require authentication using Laravel Sanctum.
-
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/logout` | Log out |
-| GET | `/user/profile` | Retrieve user profile |
-| PUT | `/user/profile` | Update user profile |
-| GET | `/user/addresses` | Retrieve customer addresses |
-| POST | `/user/addresses` | Create an address |
-| PUT | `/user/addresses/{id}` | Update an address |
-| PATCH | `/user/addresses/{id}/default` | Set default address |
-| DELETE | `/user/addresses/{id}` | Delete an address |
-| GET | `/cart` | Retrieve shopping cart |
-| POST | `/cart/items` | Add an item to cart |
-| POST | `/cart/items/{productId}/increase` | Increase item quantity |
-| POST | `/cart/items/{productId}/decrease` | Decrease item quantity |
-| DELETE | `/cart/items/{productId}` | Remove an item |
-| DELETE | `/cart` | Clear shopping cart |
-| GET | `/orders` | Retrieve customer orders |
-| GET | `/orders/{id}` | Retrieve order details |
-| POST | `/orders` | Create an order |
-| POST | `/payments/{paymentId}/snap-token` | Generate Midtrans Snap token |
-| GET | `/payments/{gatewayOrderId}` | Retrieve payment information |
-| POST | `/email/verification-notification` | Resend verification email |
-| POST | `/ai/chat` | Send a message to the AI assistant |
-
-**Note:** Order creation and Snap token generation additionally require the customer's email to be verified.
-
-### Admin Endpoints
-
-These endpoints require both Laravel Sanctum authentication and the `admin` middleware.
-
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/admin/dashboard` | Retrieve dashboard data |
-| GET | `/admin/products/low-stock` | Retrieve low-stock products |
-| POST | `/admin/products` | Create a product |
-| PUT | `/admin/products/{id}` | Update a product |
-| DELETE | `/admin/products/{id}` | Delete a product |
-| GET | `/admin/orders` | Retrieve all orders |
-| GET | `/admin/orders/{id}` | Retrieve order details |
-| PATCH | `/admin/orders/{id}` | Update order status |
-
-## Order & Payment Flow
-
-The backend manages order creation and payment processing through dedicated services.
-
-### Order Creation
-
-1. The customer selects a shipping address and submits checkout.
-2. The backend validates the address ownership.
-3. Product records are retrieved and locked during the database transaction.
-4. Product stock is validated and the order total is calculated.
-5. The order and order items are created.
-6. Product stock is reduced.
-7. A payment record is created.
-8. An order-created webhook job is dispatched after the database transaction commits.
-
-### Payment Processing
-
-1. The customer requests a Midtrans Snap token.
-2. The backend creates the Midtrans transaction.
-3. The customer completes payment through Midtrans.
-4. Midtrans sends a payment notification to the backend.
-5. The backend validates the notification signature.
-6. Payment and order statuses are updated according to the transaction result.
-7. A payment-settled webhook job is dispatched after the database transaction commits when payment succeeds.
-
-The backend handles payment states such as `pending`, `settlement`, `capture`, `expire`, `cancel`, and `deny`.
-
-## External Integrations
-
-### Midtrans
-
-Used for payment processing through Midtrans Snap and payment notification webhooks.
-
-### RajaOngkir
-
-Used to retrieve regional data, including provinces, cities, districts, and subdistricts. Regional responses are cached for seven days.
-
-### AI Service
-
-The Laravel backend communicates with the separate Zivo AI Service through HTTP requests.
-
-The AI chat endpoint forwards the authenticated user's access token and chat information to the AI Service.
-
-### n8n
-
-The backend sends two types of events to n8n:
-
-| Event | Trigger |
-|---|---|
-| `order.created` | After an order has been successfully created |
-| `payment.settled` | After a payment has successfully settled or been captured |
-
-Both events are dispatched through Laravel queued jobs instead of blocking the main request.
+Versions are based on the uploaded Composer lockfile and Docker configuration.
 
 ## Getting Started
 
-### Prerequisites
+### Requirements
 
-Make sure the following tools are installed:
+- PHP 8.2 or later.
+- Composer.
+- PostgreSQL 16 or a compatible PostgreSQL server.
+- Required PHP extensions for the application and image processing.
+- Node.js/npm only when rebuilding the Vite frontend assets included by the backend Dockerfile.
 
-- PHP 8.2 or higher
-- Composer
-- Node.js and npm
-- PostgreSQL
-- Git
-
-### 1. Clone the Repository
+### Local setup
 
 ```bash
 git clone https://github.com/DefanZp/Zivo-backEnd.git
-
 cd Zivo-backEnd
-```
-
-### 2. Install Dependencies
-
-```bash
 composer install
-npm install
-```
-
-### 3. Configure Environment Variables
-
-Create your environment file:
-
-```bash
 cp .env.example .env
-```
-
-Generate the application key:
-
-```bash
 php artisan key:generate
 ```
 
-Update your `.env` configuration according to your local environment.
-
-### 4. Configure PostgreSQL
-
-Update the database configuration:
-
-```env
-DB_CONNECTION=pgsql
-DB_HOST=127.0.0.1
-DB_PORT=5432
-DB_DATABASE=zivo
-DB_USERNAME=postgres
-DB_PASSWORD=your_password
-```
-
-Make sure the PostgreSQL database exists before running migrations.
-
-### 5. Configure External Services
-
-Add the required integration variables to your `.env` file:
-
-```env
-# Frontend
-FRONTEND_URL=http://localhost:3000
-
-# Midtrans
-MIDTRANS_CLIENT_KEY=
-MIDTRANS_SERVER_KEY=
-MIDTRANS_IS_PRODUCTION=false
-
-# RajaOngkir
-RAJAONGKIR_BASE_URL=
-RAJAONGKIR_API_KEY=
-
-# n8n
-N8N_ORDER_WEBHOOK_URL=
-N8N_PAYMENT_WEBHOOK_URL=
-N8N_WEBHOOK_USERNAME=
-N8N_WEBHOOK_PASSWORD=
-
-# AI Service
-AI_SERVICE_URL=http://127.0.0.1:8001
-```
-
-Use the appropriate credentials and service URLs for your environment.
-
-### 6. Run Database Migrations
+Configure the database and integration settings in `.env`, then run:
 
 ```bash
 php artisan migrate
-```
-
-To populate the database with the included seed data:
-
-```bash
-php artisan db:seed
-```
-
-The database seeder runs the following seeders:
-
-- `AdminSeeder`
-- `DemoUserSeeder`
-- `CategorySeeder`
-- `ProductSeeder`
-
-Review the seeder files before running them in an environment containing important data.
-
-### 7. Configure Public Storage
-
-Create the storage symbolic link:
-
-```bash
 php artisan storage:link
-```
-
-This allows publicly stored product images to be accessed through Laravel's public storage path.
-
-### 8. Build Frontend Assets
-
-The backend repository includes Vite and Tailwind CSS dependencies for its frontend assets.
-
-For production:
-
-```bash
-npm run build
-```
-
-For local development:
-
-```bash
-npm run dev
-```
-
-### 9. Run the Application
-
-Start the Laravel development server:
-
-```bash
 php artisan serve
 ```
 
-The API will be available at:
-
-```text
-http://127.0.0.1:8000/api
-```
-
-### 10. Run the Queue Worker
-
-The application uses queued jobs to process n8n webhooks.
-
-Start a queue worker:
+Run the queue worker in a separate terminal when testing queued webhook jobs:
 
 ```bash
-php artisan queue:work
+php artisan queue:work --sleep=3 --tries=3 --timeout=60
 ```
 
-Make sure your configured queue backend is available and the worker is running when testing background webhook processing.
+The current `.env.example` needs to be corrected before it can serve as a reliable PostgreSQL setup guide: it selects `pgsql` but currently contains MySQL-style port/database/user defaults. The Docker Compose service uses PostgreSQL 16, database `zivo`, and user `zivo_user`. Align the sample with the intended local or container-based workflow before publishing finalized setup instructions.
 
-## Composer Scripts
+### Environment configuration
 
-The repository includes several Composer scripts to simplify development.
+The application reads the following integration variables through `config/services.php`:
 
-| Command | Description |
+| Variable | Purpose |
 |---|---|
-| `composer setup` | Install dependencies, prepare the environment, generate the application key, run migrations, and build frontend assets |
-| `composer dev` | Run the Laravel server, queue listener, log viewer, and Vite development server |
-| `composer test` | Clear configuration cache and execute Laravel tests |
+| `FRONTEND_URL` | Frontend URL for email verification redirects |
+| `MIDTRANS_CLIENT_KEY` | Midtrans client key |
+| `MIDTRANS_SERVER_KEY` | Midtrans server key |
+| `MIDTRANS_IS_PRODUCTION` | Select Midtrans environment |
+| `RAJAONGKIR_BASE_URL` | RajaOngkir API base URL |
+| `RAJAONGKIR_API_KEY` | RajaOngkir API key |
+| `N8N_ORDER_WEBHOOK_URL` | Order-created webhook URL |
+| `N8N_PAYMENT_WEBHOOK_URL` | Payment-settled webhook URL |
+| `N8N_WEBHOOK_USERNAME` | Basic Auth username for n8n webhooks |
+| `N8N_WEBHOOK_PASSWORD` | Basic Auth password for n8n webhooks |
+| `AI_SERVICE_URL` | AI service URL; source default is `http://127.0.0.1:8001` |
 
-For example:
+Laravel's standard application, database, mail, queue, filesystem, and cache settings are also required for the selected environment. Never commit `.env` or real credentials.
 
-```bash
-composer dev
-```
+## Docker Deployment
 
-This command runs the following processes concurrently:
+The provided Compose configuration defines:
 
-- Laravel development server
-- Laravel queue listener
-- Laravel Pail log viewer
-- Vite development server
+- `app` — PHP-FPM application container.
+- `queue` — Laravel queue worker using the application image.
+- `postgres` — PostgreSQL 16 database.
+- `nginx` — reverse proxy for HTTP/HTTPS traffic.
 
-## Testing
+It also uses persistent volumes for PostgreSQL data and public product images, and an external Docker network named `zivo-proxy`.
 
-The project uses PHPUnit for automated testing.
+The current Compose file mounts host Let's Encrypt certificate files for the API and n8n domains and expects the external `zivo-proxy` network to exist. It is therefore deployment-specific; it is not a self-contained local development Compose file. Prepare the network and certificate paths before using it.
 
-Run the test suite:
+## Testing and Verification
+
+Run the Laravel test command with:
 
 ```bash
 php artisan test
 ```
 
-Or use the Composer script:
+The uploaded repository contains only the two Laravel scaffold example tests; domain tests for checkout, payment lifecycle, cart ownership, and order transitions are still needed. In the source audit, 86 PHP files passed `php -l` under PHP 8.4.24. PHPUnit, database migrations, integrations, and deployed endpoints were not executed as part of that audit.
 
-```bash
-composer test
-```
+## Known Limitations and Follow-ups
 
-The PHPUnit configuration uses an in-memory SQLite database for testing.
+- The `.env.example` PostgreSQL settings do not match the configured PostgreSQL 16 Compose service.
+- The Dockerfile uses Intervention Image's GD driver in application code but does not install/enable the PHP GD extension; verify and fix the image-processing runtime dependency.
+- Midtrans `cancel`/`deny` currently leave the order pending and stock deducted, with no failed-payment retry path.
+- Deleting a product may cascade to historical order items; preserve order history before allowing hard deletion.
+- Agent state routes are not scoped to an authenticated user.
+- The admin seeder contains fixed default credentials; do not use those credentials in production.
+- The inspected RegionService performs region lookup; it does not implement shipping-rate calculation.
 
-## Docker
+## Related Repositories
 
-The repository includes a `Dockerfile` for building the application.
+- [Zivo Frontend](https://github.com/DefanZp/Zivo-frontEnd-next)
+- [Zivo AI Service](https://github.com/DefanZp/Zivo-ai)
+- [Zivo n8n](https://github.com/DefanZp/Zivo-n8n)
 
-The Docker build uses a multi-stage approach:
+## Author
 
-1. A Node.js stage installs dependencies and builds Vite assets.
-2. A PHP 8.3-FPM stage installs PHP dependencies and PostgreSQL extensions.
-3. Composer installs production dependencies.
-4. The compiled frontend assets are copied into the Laravel application.
-5. Storage and bootstrap cache permissions are configured.
+**Defan Zain Pratama** — Full-Stack Developer interested in web applications, backend systems, and AI-powered applications.
 
-Build the Docker image:
-
-```bash
-docker build -t zivo-backend .
-```
-
-Run the container:
-
-```bash
-docker run -p 9000:9000 zivo-backend
-```
-
-The container exposes PHP-FPM on port `9000`. A web server or reverse proxy is required to serve HTTP requests to the application.
-
-Database connectivity, environment variables, storage, and queue workers must also be configured for the deployment environment.
-
-## Environment Variables Reference
-
-The following table summarizes the main application and integration variables.
-
-| Variable | Description |
-|---|---|
-| `APP_NAME` | Application name |
-| `APP_ENV` | Application environment |
-| `APP_KEY` | Laravel application encryption key |
-| `APP_DEBUG` | Enable or disable debug mode |
-| `APP_URL` | Backend application URL |
-| `FRONTEND_URL` | Frontend URL used for email verification redirects |
-| `DB_CONNECTION` | Database driver |
-| `DB_HOST` | Database host |
-| `DB_PORT` | Database port |
-| `DB_DATABASE` | Database name |
-| `DB_USERNAME` | Database username |
-| `DB_PASSWORD` | Database password |
-| `QUEUE_CONNECTION` | Queue backend |
-| `MAIL_MAILER` | Mail transport |
-| `MIDTRANS_CLIENT_KEY` | Midtrans client key |
-| `MIDTRANS_SERVER_KEY` | Midtrans server key |
-| `MIDTRANS_IS_PRODUCTION` | Midtrans production mode |
-| `RAJAONGKIR_BASE_URL` | RajaOngkir API base URL |
-| `RAJAONGKIR_API_KEY` | RajaOngkir API key |
-| `N8N_ORDER_WEBHOOK_URL` | n8n order-created webhook URL |
-| `N8N_PAYMENT_WEBHOOK_URL` | n8n payment-settled webhook URL |
-| `N8N_WEBHOOK_USERNAME` | n8n webhook basic-auth username |
-| `N8N_WEBHOOK_PASSWORD` | n8n webhook basic-auth password |
-| `AI_SERVICE_URL` | Base URL of the Zivo AI Service |
-
-## Security Considerations
-
-- Keep API keys, passwords, and application secrets in environment variables.
-- Never commit the `.env` file or production credentials.
-- Use HTTPS in production environments.
-- Keep `APP_DEBUG=false` in production.
-- Protect administrative endpoints using authentication and role-based middleware.
-- Keep payment notification signature validation enabled.
-- Run queue workers in the production environment to process background jobs.
-
-## License
-
-This project is licensed under the MIT License, as declared in the Composer project configuration.
+- GitHub: [@DefanZp](https://github.com/DefanZp)

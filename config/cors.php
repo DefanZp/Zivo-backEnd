@@ -22,7 +22,7 @@ return [
     'allowed_origins' => [
         'http://localhost:4200',
         'http://localhost:3000',
-        'https://zivo-front-end.vercel.app',
+        'https://zivo-front-end-next-5uvw.vercel.app',
     ],
 
     'allowed_origins_patterns' => [],
